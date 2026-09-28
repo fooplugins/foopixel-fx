@@ -1,0 +1,242 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>FooPixel FX · demo</title>
+<style>
+  /* ---- Site tokens (copied from foopixel.com/styles.css) ---- */
+  :root {
+    color-scheme: dark;
+    --ink: #f1f5ff;
+    --muted: #9aaac0;
+    --faint: #64758f;
+    --night: #07101f;
+    --panel: #0c1a2d;
+    --line: rgba(211, 226, 255, 0.14);
+    --blue: #4b7dff;
+    --cyan: #35c6f4;
+    font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font-synthesis: none;
+  }
+  * { box-sizing: border-box; }
+  body { min-width: 320px; margin: 0; color: var(--ink); background: var(--night); }
+
+  .page { width: min(1240px, calc(100vw - 48px)); margin-inline: auto; padding: 44px 0 90px; }
+
+  .intro { display: flex; gap: 18px; align-items: flex-start; }
+  .intro img { width: 56px; height: 56px; flex: 0 0 56px; margin-top: 2px; }
+  .intro h1 { margin: 0 0 8px; font-size: clamp(1.5rem, 2.6vw, 2rem); font-weight: 780; letter-spacing: -0.01em; }
+  .intro p { margin: 0; max-width: 64ch; color: var(--muted); font-size: 0.92rem; line-height: 1.6; }
+
+  .controls {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 14px 28px;
+    margin: 30px 0 38px; padding: 14px 18px;
+    border: 1px solid var(--line); border-radius: 12px;
+    background: rgba(255, 255, 255, 0.02);
+    color: var(--muted); font-size: 0.8rem;
+  }
+  .controls label { display: inline-flex; align-items: center; gap: 10px; cursor: pointer; }
+  .controls input[type="range"] { width: 120px; accent-color: var(--blue); }
+  .controls input[type="checkbox"] { accent-color: var(--blue); }
+  .controls output { min-width: 2.4em; color: var(--ink); font-variant-numeric: tabular-nums; }
+  .controls .rm-note { flex-basis: 100%; color: #ffcf8d; }
+  .controls .rm-note[hidden] { display: none; }
+
+  .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 44px 32px; }
+  @media (max-width: 920px) { .grid { grid-template-columns: 1fr; } }
+
+  .variant h2 { margin: 0 0 6px; font-size: 1.1rem; font-weight: 720; }
+  .variant > p { margin: 0 0 18px; max-width: 58ch; color: var(--muted); font-size: 0.84rem; line-height: 1.55; }
+
+  /* ---- Uploader (copied from site) ---- */
+  .uploader-panel {
+    overflow: hidden;
+    border: 1px solid rgba(152, 183, 238, 0.26);
+    border-radius: 16px;
+    background: rgba(8, 21, 39, 0.88);
+    box-shadow: 0 30px 90px rgba(0, 0, 0, 0.4), inset 0 1px rgba(255, 255, 255, 0.07);
+  }
+  .panel-topline {
+    display: flex; align-items: center; justify-content: space-between; gap: 16px;
+    padding: 16px 20px; border-bottom: 1px solid var(--line);
+    color: var(--faint); font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 0.58rem; letter-spacing: 0.1em;
+  }
+  .panel-status { display: flex; align-items: center; gap: 8px; color: var(--cyan); }
+  .panel-status i {
+    display: inline-block; width: 7px; height: 7px; border-radius: 50%;
+    background: var(--cyan); box-shadow: 0 0 0 4px rgba(53, 198, 244, 0.1);
+  }
+  .upload-zone {
+    position: relative; display: grid; place-items: center;
+    min-height: 260px; margin: 20px; padding: 30px;
+    border: 1px dashed rgba(152, 183, 238, 0.35); border-radius: 11px;
+    cursor: pointer;
+    transition: background 160ms ease, border-color 160ms ease;
+  }
+  .upload-zone:hover,
+  .upload-zone:focus-visible,
+  .upload-zone.is-dragging {
+    border-color: var(--cyan); outline: none; background: rgba(53, 198, 244, 0.06);
+  }
+  .empty-upload {
+    display: grid; justify-items: center; gap: 10px;
+    color: var(--faint); font-size: 0.73rem; text-align: center;
+  }
+  .empty-upload strong { color: var(--ink); font-size: 1.05rem; font-weight: 600; }
+  .upload-symbol {
+    display: grid; place-items: center; width: 44px; height: 44px;
+    border: 1px solid rgba(152, 183, 238, 0.35); border-radius: 50%;
+    color: var(--cyan); font-size: 1.4rem;
+    transition: box-shadow 120ms linear;
+  }
+  .upload-help { margin: 0 20px 20px; color: var(--faint); font-size: 0.7rem; line-height: 1.5; }
+
+  /* Trace variant: keep the dashed line quiet so the moving pixels read */
+  .v-trace .upload-zone:hover,
+  .v-trace .upload-zone:focus-visible,
+  .v-trace .upload-zone.is-dragging { border-color: rgba(152, 183, 238, 0.3); }
+
+  /* ---- Buttons (copied from site) ---- */
+  .actions { display: flex; flex-wrap: wrap; gap: 13px; margin-top: 22px; }
+  .button {
+    display: inline-flex; align-items: center; gap: 13px;
+    min-height: 46px; padding: 0 17px;
+    border: 1px solid var(--line); border-radius: 100px;
+    font: inherit; font-size: 0.78rem; font-weight: 750; letter-spacing: 0.02em;
+    text-decoration: none; cursor: pointer;
+    transition: transform 180ms ease, border-color 180ms ease, background 180ms ease;
+  }
+  .button:hover, .button:focus-visible { transform: translateY(-2px); border-color: rgba(211, 226, 255, 0.45); }
+  .button:focus-visible { outline: 2px solid var(--cyan); outline-offset: 3px; }
+  .button-primary { border-color: var(--blue); color: white; background: var(--blue); }
+  .button-primary:hover, .button-primary:focus-visible { background: #5e8aff; }
+  .button-quiet { color: var(--muted); background: rgba(255, 255, 255, 0.02); }
+  .button-quiet:hover, .button-quiet:focus-visible { color: var(--ink); background: rgba(255, 255, 255, 0.06); }
+
+  .footnote { margin-top: 56px; color: var(--faint); font-size: 0.78rem; line-height: 1.6; max-width: 70ch; }
+  .footnote code { color: var(--muted); }
+</style>
+</head>
+<body>
+<main class="page">
+  <header class="intro">
+    <img src="data:image/webp;base64,UklGRrANAABXRUJQVlA4WAoAAAAwAAAAXwAAXwAASUNDUMgBAAAAAAHIAAAAAAQwAABtbnRyUkdCIFhZWiAH4AABAAEAAAAAAABhY3NwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAA9tYAAQAAAADTLQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAlkZXNjAAAA8AAAACRyWFlaAAABFAAAABRnWFlaAAABKAAAABRiWFlaAAABPAAAABR3dHB0AAABUAAAABRyVFJDAAABZAAAAChnVFJDAAABZAAAAChiVFJDAAABZAAAAChjcHJ0AAABjAAAADxtbHVjAAAAAAAAAAEAAAAMZW5VUwAAAAgAAAAcAHMAUgBHAEJYWVogAAAAAAAAb6IAADj1AAADkFhZWiAAAAAAAABimQAAt4UAABjaWFlaIAAAAAAAACSgAAAPhAAAts9YWVogAAAAAAAA9tYAAQAAAADTLXBhcmEAAAAAAAQAAAACZmYAAPKnAAANWQAAE9AAAApbAAAAAAAAAABtbHVjAAAAAAAAAAEAAAAMZW5VUwAAACAAAAAcAEcAbwBvAGcAbABlACAASQBuAGMALgAgADIAMAAxADZBTFBIiwQAAA2gBMm2aduqce555rdt27Zt27Zt27ZtNG3b1rNx7xqNvdfaa59zWx8RETEB/L9oY66tl52pR9dfbz35YVf3M8VMq50+OBQ7pl1208Umnv7sbyO7k0G7Lr14CIHEvqev++6n9//WbRyw24QQqNrcZNmVTni1e5j1jBBCIGNzljvG7/qX22/nLUIg+9r7nfNB2+27aAgky0msdOy1L7TZRhuEQLqVxkxn3/qK22mznUMgs1zCdMdc9msbzbpfCCTLBRmwylj6/LXbp9chIZBuFSrPs/fxbpcllg5ktSqwy9dvtMtdIU2OAHLStEu+GNpjuRDIbiXp4Ge/bY8rA+lWStVBc73XFvMPr1Lr5Ye3xSaTW2iaaSGM+rOztdQvtJA+hPDTx8Pu/7WF+szZEWjt5sJrT7nSY5e3RI9ZF7ho3hBCqwHNWQ7ecK3fXdvKG60SQqCycjkNmPfcUz6vqXnEsnagogDnEq7AsqdtM66WaU+2TVWZWuUKmuXxNUfUMN/JNpVlWnz2NW9ztkEHd5rKMq3eY7+nfsy28WAXrBSZ1p8t/JxrjT1NUU6QaW0Z4OKjMzXONO1oJVmFpd7NtMfYiNVSUblQrll+ytJnYUeyGxAYlRlhVFZx7ZezzLyCqS4nWACWhQEZYURRxkqa69ssfXvG5FhOi1KLuIxM+oCxIcdyAT790Ao7k9PCKmS1sCps2/+BsRk2t3nqWVmX95QrWRYV5YSc05ww03aRpuh0ybyGiZOAvhKVZSpbSVYV+q166LajC81Dp/elf5ZMaUAWCnSHq8x7R2dhp8HcPbSkEUAGrG6hz1H3fA8IE11zMLr4+UaQ7Ygck1tBTmKKk44GJt84RNOUvfcLXnOdIJusMgIMCHBMTrDS2PjX96HzhiHELQSQYiUgDAgwIMDIMjVechTlC30k4NNFTfL3hv5TNxKyymBF5GrTDp9cluyCkFkjWKsc378eI4uoVW3wbB9Wu/Z6YONzQPwMbkzTUQ8gx8rlevz334I+c8jIQFdDtVklcsRK6TlwSMQFYcCoGYg2Aq0tA8IRTPm4HweIRhdRyyqzWswCsCKTxxVm78mLm4wygfiYvwHmAcaNcB2WHLMKpRbRUb8WXhzIGuMp3X+6wnV3XmC571DDqJDiiMAlworJCakjvivMFBjbWXbg1IBv+O0PWT3nEQTHjCIGlaRbWSZPLHzTof7EBZicFjXLcobzKa5lE5cpWtAIafVbVrUhL5YMGUdGgyzAqkNOicspe5DRwiAZhj7aaKhrq8F15LUSXuuV4YYhpsF0CPCBXcE6fYZsMlaSXJI65GoyXvsnWGCifmjbbBbJMnJELjlMOUzpw1vIDJkO4Mz9p81V1TKKWMDo86izGSw6ugrsf0m/Erme6sPP6V2LAJvSZ3/ZR4UWn7BWk1p7GpBLJp2w4OZTYVkt9NcD51BzZ4dI3XfcVhv1Mi3rj557j9oPfh3TN8YLD7y/yVGDyxwRBhkVDBag8PGVb83UoP4fh5v0kb89ctkIl8QNYDCyZBQAi/Y1+Y0BU3Qb/WtW7u7MPw4BAFZQOCAuBwAAkCkAnQEqYABgAD4ZCoRBIQU6u3oEAGEtgBpzLZ/APwA1wTi/4M/sP/r/kxqD8y+4P7F/23jvyueo/xX9c/of7E/0b///GP/AeMB7gH6G/1D+V/1X/jf2Pub+YD+c/xz/P/1P9//lv/tP+A/gHuA/Tn2AP5r/T/R29iP0AP5b/ovVM/uP+u/s372/RF+yv/T/zPwDfqP/zPz/4wDsQP7v+EHcArQH5LaJb+8cCtwv+Yf6r8ndUy/0nH6TD/6r/rvUnz2/TH/I9wP+Pfz//X/2v94O6r6Ef6othOwE67G7t7Hkj4N0QLCE6cQZioFPK+v4Acmv3BL4Yha6En9oVO2UGi1S4cYfbPg8DvJfFtSUXA3sInWitUX3MMHkkBpj+SUUXTOPK1iPAXvxWEf6CV98FBv87Xer2+cHWrIGt+ugwO4mMCi7jdRbEVDwF2MA2xdh67TetUAA/v/JnIAGn8km5uckDJFNYKy1a2Cjft/5DNax951Xpl8W1p+YUpT9Jx8c/hDbEv43aE0QRHzWsZMfvoy540HbEsZTMbJZ6mLhJrRxJa0ns7OTPjK4WTuHFwpCasa6T/1PUhhyfGu3dJPSZk+pggOwxTyyFu9xSS6G2jvvj0aWzg0ztKPBve94M21xNHnncF3Fp3A/X1G78VR1m9F9iF4rEF88QwDfuvX/7tGpH9YCnyoW5YkH1ELvIDNdeFrXOUPiF9bpIfmzCKr4Ygz8o03vvaoK7+v/gaqsGYc34Q3x3b0pt5Giqph2XaeMjpna8qvk5AAok2fyxGNx4M3WjbdSRwrOrOtHm8mDxVTDE/Dsi6ru06mwHcBDzDsxtZMyN8vI9/KVEGKMvjqq/NUVzuxegQsm0wZK6jwU38i6T+lyy3jBQkdU5SGT2w5YKqHtSpaDI/I2ndvx9c5GTdP7yb2Lj0W/+rviKX5qnkUtazsdCXfnB/Z6TvKyHNjdcA8pB08k51//XlIIL/vRdVoclP0dN5Omd5Dc/f4H0fBwZcrQRFN6nwQnwZb/RGtIBGd9l15AoJK6Imo10EBZxDQOHgXZZSYgULlKGcxwZVh9xeEY2bPNL7qJtZMvWLnY1FJ2CQIvdWJIp3ggPGba9ABtPaK+CnKOwXaify4xwD0dDJ4SngkD7R6Lp34UO9LE7VtU5hEXbLfmnrFQsRghQM/5wSEAylI4Dq4rPpc7iktIPk8tzwUAD5xvNeqStg+pI34d3l2qnq1a7Y7kNspmGfYj40R8SbHOccw7YlM8HrYC3R49nqBX6CABxdg7j3SyV8BQAE/GaWq/mH84RCfA/s1C+Q9rQTH87fqUhPn5n8NqV+oyakMAO9EkbFnHlDH85QFOGo6xCLgA/VlaAm+/2Hwb6rh71bT0iBoV/BbAcSHihb4vW/4nUr5aso/WicjdER/llrfV1oNKOiU5zThd6XeAHJwIGyS9vWRpaVTpHNabjHZBPZ4RO+D8r4RDQIvkALWsi+zRYWZTVaVYO1xaryRjsa3b1neMsfLh/s2eNrCKCcMAzUnjhcrxUm9GkQask68V+mnvijKTWUoRwtEAkSRPv+42pBhAf0MQ/lCCfAuaF7tGyOE/RUNpNgtGSXVytN+YCsxqZkjpyiDeeFaumYnWjKuPdGmxbACx6lPRTT3GpTKxcjjDPzd/evlEXfslkWIjv1VsfFvayyE63wBQHezQ4NJDALwL1/olo8JjjwFDvgT8jHS8z/+U/5P4qhdhwFWG+5bFSXSHWNaohyK78zRLNokzHJiO1YR1eTkdkgZjICuZEY9AxBtfOYjBBBf/kjzg50o+bDPEMbjZFLUgaKNwq3xBv//UgS7Xfs7UvNdVf/wwrp6F+i3aRIAzKca81SJzeIkUCcIvRl4gJU3HZ8rSle9/uVvP36Mi74I9nEBW+siBizRNpUL+iiB5Dvt+1f9svYxklVQkJ7fWuFgfyrkkCPBNKP/xeyQjs/qLoDJ+/T7oKLup5qJG6r5kZ4T2/YqZz3m8t0zL8rB0JmY4eVc5OllzlcLCS/Raq81k0F35c86dzKR6uMRTEiRcSTj/6Nn6Y37P2aKM8MtBGEB6v38rZ/HBtUmCR//AovjEGjQLsCM3rk47dKOQMQHNnrWC+i3V5kYUfY5C0v6p5mmJrv1fk2oH/BfBw7E83/bPcfm61on2+LECMXrCj3qSH4A0aHWCVyFF88cN+gO0xhIsNZKEGVaesWSi65fLOiBzc6MR+gdDi3UIwS+2Aki5O18qjq63k2f/KdPv6M/+65VXo4SHzLPMIhixlxkT4yIed5VPF2P8SkoHAW5jYqNhy3Ln73B3kWotA+4nM0/IqdVZHlb6FSPXAVptdlOVUQmgipqh3GQaHa2GjnbtpW/XdzoMSCH1X8OmzFq0GcGBEKpU4MM9JdZIDP8+0iVYUKZ8UwbDuU7FnAgo6QMefkJZxJ20vGvy8Zsm9IAXMAAAAAA=" alt="" />
+    <div>
+      <h1>Pixel hover effects</h1>
+      <p>Four treatments for the upload drop area and CTA buttons, taken from the pixels breaking off the cloud in the logo: square, two sizes, blue shading to cyan. Hover, tab to, or drag a file over each one.</p>
+    </div>
+  </header>
+
+  <div class="controls" role="group" aria-label="Effect controls">
+    <label>Density <input type="range" id="density" min="0.4" max="2" step="0.1" value="1" /><output for="density">1.0×</output></label>
+    <label>Speed <input type="range" id="speed" min="0.5" max="2" step="0.1" value="1" /><output for="speed">1.0×</output></label>
+    <label><input type="checkbox" id="force" /> Keep all effects running</label>
+    <p class="rm-note" id="rm-note" hidden>Reduced motion is on for this device, so the effects stay off. <label><input type="checkbox" id="rm-override" /> Preview anyway</label></p>
+  </div>
+
+  <div class="grid">
+    <!-- A: Breakaway -->
+    <section class="variant v-breakaway">
+      <h2>Breakaway</h2>
+      <p>Pixels detach from every edge and step outward, the same gesture as the logo, shading blue to cyan across the element. On buttons they peel off the whole pill in the button's own colour. The closest match to the mark.</p>
+      <div class="uploader-panel">
+        <div class="panel-topline"><span>FOOPIXEL / UPLOAD</span><span class="panel-status"><i aria-hidden="true"></i><span>ready</span></span></div>
+        <div class="upload-zone" data-pixel-fx="breakaway" data-pixel-preset="zone" role="button" tabindex="0">
+          <div class="empty-upload"><span class="upload-symbol" aria-hidden="true">↑</span><strong>Drop media files or a ZIP here</strong><span>or choose files · Images, MP4 video, and audio · max 5 MiB</span></div>
+        </div>
+        <p class="upload-help">Paste an image with Ctrl+V or ⌘V.</p>
+      </div>
+      <div class="actions">
+        <button class="button button-primary" data-pixel-fx="breakaway" data-pixel-preset="button"><span>Upload an image ↗</span></button>
+        <button class="button button-quiet" data-pixel-fx="breakaway" data-pixel-preset="button"><span>Copy prompt for agent</span></button>
+      </div>
+    </section>
+
+    <!-- B: Uplink -->
+    <section class="variant v-uplink">
+      <h2>Uplink</h2>
+      <p>Pixels climb the sides of the drop area, turn in to the upload icon, and one leaves through the top. It tells the upload story, at the cost of a little more movement. Buttons fizz with pixels rising through the fill.</p>
+      <div class="uploader-panel">
+        <div class="panel-topline"><span>FOOPIXEL / UPLOAD</span><span class="panel-status"><i aria-hidden="true"></i><span>ready</span></span></div>
+        <div class="upload-zone" data-pixel-fx="uplink" data-pixel-preset="zone" role="button" tabindex="0">
+          <div class="empty-upload"><span class="upload-symbol" aria-hidden="true">↑</span><strong>Drop media files or a ZIP here</strong><span>or choose files · Images, MP4 video, and audio · max 5 MiB</span></div>
+        </div>
+        <p class="upload-help">Paste an image with Ctrl+V or ⌘V.</p>
+      </div>
+      <div class="actions">
+        <button class="button button-primary" data-pixel-fx="uplink" data-pixel-preset="button" data-pixel-fill="light"><span>Upload an image ↗</span></button>
+        <button class="button button-quiet" data-pixel-fx="uplink" data-pixel-preset="button"><span>Copy prompt for agent</span></button>
+      </div>
+    </section>
+
+    <!-- C: Dither -->
+    <section class="variant v-dither">
+      <h2>Dither</h2>
+      <p>A hidden pixel grid lights up under the cursor and fades behind it, shading blue to cyan across the area like the logo. Buttons get one pixelated sweep on entry. The most responsive to the pointer.</p>
+      <div class="uploader-panel">
+        <div class="panel-topline"><span>FOOPIXEL / UPLOAD</span><span class="panel-status"><i aria-hidden="true"></i><span>ready</span></span></div>
+        <div class="upload-zone" data-pixel-fx="dither" data-pixel-preset="zone" role="button" tabindex="0">
+          <div class="empty-upload"><span class="upload-symbol" aria-hidden="true">↑</span><strong>Drop media files or a ZIP here</strong><span>or choose files · Images, MP4 video, and audio · max 5 MiB</span></div>
+        </div>
+        <p class="upload-help">Paste an image with Ctrl+V or ⌘V.</p>
+      </div>
+      <div class="actions">
+        <button class="button button-primary" data-pixel-fx="dither" data-pixel-preset="button" data-pixel-fill="light"><span>Upload an image ↗</span></button>
+        <button class="button button-quiet" data-pixel-fx="dither" data-pixel-preset="button"><span>Copy prompt for agent</span></button>
+      </div>
+    </section>
+
+    <!-- D: Trace -->
+    <section class="variant v-trace">
+      <h2>Trace</h2>
+      <p>Two short pixel trails weave along the border, each led by a pulsing head with a pixel hopping around it, and shed the odd pixel outward as they go. Reads clearly on both the dashed outline and the pill buttons, and works as a loading state too.</p>
+      <div class="uploader-panel">
+        <div class="panel-topline"><span>FOOPIXEL / UPLOAD</span><span class="panel-status"><i aria-hidden="true"></i><span>ready</span></span></div>
+        <div class="upload-zone" data-pixel-fx="trace" data-pixel-preset="zone" role="button" tabindex="0">
+          <div class="empty-upload"><span class="upload-symbol" aria-hidden="true">↑</span><strong>Drop media files or a ZIP here</strong><span>or choose files · Images, MP4 video, and audio · max 5 MiB</span></div>
+        </div>
+        <p class="upload-help">Paste an image with Ctrl+V or ⌘V.</p>
+      </div>
+      <div class="actions">
+        <button class="button button-primary" data-pixel-fx="trace" data-pixel-preset="button" data-pixel-fill="light"><span>Upload an image ↗</span></button>
+        <button class="button button-quiet" data-pixel-fx="trace" data-pixel-preset="button"><span>Copy prompt for agent</span></button>
+      </div>
+    </section>
+  </div>
+
+  <p class="footnote">This page loads <code>dist/foopixel-fx.min.js</code> and uses only data attributes. See the README for the full API.</p>
+</main>
+
+<script src="../dist/foopixel-fx.min.js"></script>
+<script>
+  // Demo-only wiring. On the site, your uploader code already handles drag classes and drops.
+  document.querySelectorAll(".upload-zone").forEach((zone) => {
+    let depth = 0;
+    zone.addEventListener("dragenter", (e) => { e.preventDefault(); depth++; zone.classList.add("is-dragging"); });
+    zone.addEventListener("dragover", (e) => e.preventDefault());
+    zone.addEventListener("dragleave", () => { if (--depth <= 0) { depth = 0; zone.classList.remove("is-dragging"); } });
+    zone.addEventListener("drop", (e) => { e.preventDefault(); depth = 0; zone.classList.remove("is-dragging"); });
+  });
+
+  for (const id of ["density", "speed"]) {
+    const input = document.getElementById(id), out = input.nextElementSibling;
+    input.addEventListener("input", () => {
+      PixelFX.configure({ [id]: +input.value });
+      out.textContent = (+input.value).toFixed(1) + "×";
+    });
+  }
+  document.getElementById("force").addEventListener("change", (e) => {
+    PixelFX.all().forEach((fx) => fx.setActive(e.target.checked));
+  });
+  const reduce = matchMedia("(prefers-reduced-motion: reduce)");
+  const note = document.getElementById("rm-note");
+  const syncRM = () => { note.hidden = !reduce.matches; };
+  syncRM(); reduce.addEventListener?.("change", syncRM);
+  document.getElementById("rm-override").addEventListener("change", (e) => {
+    PixelFX.configure({ respectReducedMotion: !e.target.checked });
+  });
+</script>
+</body>
+</html>

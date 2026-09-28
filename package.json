@@ -1,0 +1,35 @@
+{
+  "name": "@fooplugins/foopixel-fx",
+  "version": "1.0.0",
+  "description": "Pixel hover effects for drop zones and buttons, based on the FooPixel logo.",
+  "license": "MIT",
+  "private": true,
+  "type": "module",
+  "main": "dist/foopixel-fx.min.js",
+  "module": "dist/foopixel-fx.esm.min.js",
+  "types": "dist/foopixel-fx.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/foopixel-fx.d.ts",
+      "import": "./dist/foopixel-fx.esm.min.js",
+      "default": "./dist/foopixel-fx.min.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "sideEffects": false,
+  "scripts": {
+    "build": "sh build.sh"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/fooplugins/foopixel-fx.git"
+  },
+  "homepage": "https://github.com/fooplugins/foopixel-fx#readme",
+  "bugs": {
+    "url": "https://github.com/fooplugins/foopixel-fx/issues"
+  }
+}
