@@ -12,6 +12,8 @@
     avoid: "[data-pixel-text], .empty-upload",
     pulse: true,
     drag: undefined,
+    scheme: null,
+    colors: null,
   };
 
   class Instance {
@@ -24,6 +26,7 @@
       this.preset = this.opts.preset === "button" ? "button" : "zone";
       this.isZone = this.preset === "zone";
       this.onFill = this.opts.fill === "light";
+      this.pal = palette(this.opts.scheme, this.opts.colors);
       this.fx = FX[name]({ preset: this.preset });
       this.bleed = this.fx.bleed || 0;
       this.clip = !!this.fx.clip;
@@ -83,8 +86,10 @@
     get density() { return config.density * (+this.opts.density || 1); }
     get blocked() { return config.respectReducedMotion && reduce.matches; }
 
+    tone(light, t) { return tone(light, t, this.pal); }
+
     pulseColor(a) {
-      const [r, g, b] = hex(config.colors.pulse);
+      const [r, g, b] = hex(this.pal ? this.pal.pulse : config.colors.pulse);
       return `rgba(${r},${g},${b},${a.toFixed(3)})`;
     }
 
@@ -187,6 +192,8 @@
       avoid: d.pixelAvoid,
       pulse: bool(d.pixelPulse),
       drag: bool(d.pixelDrag),
+      scheme: d.pixelScheme,
+      colors: d.pixelColors,
     };
   }
 
@@ -200,8 +207,10 @@
     return inst;
   }
 
-  /** Attach to every [data-pixel-fx] element under root (skips ones already attached). */
+  /** Attach to every [data-pixel-fx] element under root (skips ones already attached).
+   *  Also turns on click handling for [data-pixel-burst] anywhere on the page. */
   function scan(root = document) {
+    listenForBursts();
     const els = [];
     if (root.matches?.("[data-pixel-fx]")) els.push(root);
     root.querySelectorAll?.("[data-pixel-fx]").forEach((el) => els.push(el));
@@ -216,6 +225,12 @@
   function configure(next = {}) {
     for (const k of ["density", "speed", "maxDpr"]) if (next[k] != null) config[k] = +next[k];
     if (next.respectReducedMotion != null) config.respectReducedMotion = !!next.respectReducedMotion;
+    if (next.scheme) {
+      if (!SCHEMES[next.scheme]) throw new Error(`PixelFX: unknown scheme "${next.scheme}". Use one of: ${Object.keys(SCHEMES).join(", ")}`);
+      config.scheme = next.scheme;
+      config.colors = copyScheme(SCHEMES[next.scheme]);
+      setColors(config.colors.brand, config.colors.light);
+    }
     if (next.colors) {
       if (next.colors.brand) config.colors.brand = [...next.colors.brand];
       if (next.colors.light) config.colors.light = [...next.colors.light];
@@ -228,5 +243,5 @@
 
   reduce.addEventListener?.("change", () => live.forEach((i) => i.update()));
 
-  return { VERSION, attach, scan, get, destroy, all, configure, effects: Object.keys(FX) };
+  return { VERSION, attach, scan, get, destroy, all, configure, burst, effects: Object.keys(FX), bursts: Object.keys(BURSTS), schemes: Object.keys(SCHEMES) };
 })();

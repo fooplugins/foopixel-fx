@@ -20,6 +20,7 @@
     font-synthesis: none;
   }
   * { box-sizing: border-box; }
+  a { color: var(--cyan); text-underline-offset: 2px; }
   body { min-width: 320px; margin: 0; color: var(--ink); background: var(--night); }
 
   .page { width: min(1240px, calc(100vw - 48px)); margin-inline: auto; padding: 44px 0 90px; }
@@ -39,6 +40,10 @@
   .controls label { display: inline-flex; align-items: center; gap: 10px; cursor: pointer; }
   .controls input[type="range"] { width: 120px; accent-color: var(--blue); }
   .controls input[type="checkbox"] { accent-color: var(--blue); }
+  .controls select {
+    padding: 5px 8px; border: 1px solid var(--line); border-radius: 7px;
+    color: var(--ink); background: #0c1a2d; font: inherit;
+  }
   .controls output { min-width: 2.4em; color: var(--ink); font-variant-numeric: tabular-nums; }
   .controls .rm-note { flex-basis: 100%; color: #ffcf8d; }
   .controls .rm-note[hidden] { display: none; }
@@ -132,6 +137,7 @@
   <div class="controls" role="group" aria-label="Effect controls">
     <label>Density <input type="range" id="density" min="0.4" max="2" step="0.1" value="1" /><output for="density">1.0×</output></label>
     <label>Speed <input type="range" id="speed" min="0.5" max="2" step="0.1" value="1" /><output for="speed">1.0×</output></label>
+    <label>Scheme <select id="scheme"></select></label>
     <label><input type="checkbox" id="force" /> Keep all effects running</label>
     <p class="rm-note" id="rm-note" hidden>Reduced motion is on for this device, so the effects stay off. <label><input type="checkbox" id="rm-override" /> Preview anyway</label></p>
   </div>
@@ -206,7 +212,7 @@
     </section>
   </div>
 
-  <p class="footnote">This page loads <code>dist/foopixel-fx.min.js</code> and uses only data attributes. See the README for the full API.</p>
+  <p class="footnote">This page loads <code>dist/foopixel-fx.min.js</code> and uses only data attributes. See the README for the full API, and the <a href="bursts.html">bursts demo</a> for one-off pixel celebrations.</p>
 </main>
 
 <script src="../dist/foopixel-fx.min.js"></script>
@@ -227,6 +233,9 @@
       out.textContent = (+input.value).toFixed(1) + "×";
     });
   }
+  const schemeSelect = document.getElementById("scheme");
+  schemeSelect.innerHTML = PixelFX.schemes.map((s) => `<option value="${s}">${s}</option>`).join("");
+  schemeSelect.addEventListener("change", (e) => PixelFX.configure({ scheme: e.target.value }));
   document.getElementById("force").addEventListener("change", (e) => {
     PixelFX.all().forEach((fx) => fx.setActive(e.target.checked));
   });

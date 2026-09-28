@@ -18,7 +18,26 @@
     LIGHT = ramp(hex(light[0]), hex(light[1]));
   }
   setColors(DEFAULT_COLORS.brand, DEFAULT_COLORS.light);
-  const tone = (light, t) => (light ? LIGHT : BRAND)[Math.round(clamp(t) * 31)];
+  // pal: a per-element palette from palette(), or null to follow the global colours
+  const tone = (light, t, pal) => (pal ? (light ? pal.light : pal.brand) : light ? LIGHT : BRAND)[Math.round(clamp(t) * 31)];
+
+  const tint = (c, k) => "#" + hex(c).map((v) => Math.round(v + (255 - v) * k).toString(16).padStart(2, "0")).join("");
+  const palettes = new Map();
+  /** A named scheme, or a custom [from, to] pair (array or "a,b" string), as colour ramps. */
+  function palette(scheme, colors) {
+    let c;
+    if (colors) {
+      const [a, b] = typeof colors === "string" ? colors.split(/[\s,]+/).filter(Boolean) : colors;
+      if (!a || !b) throw new Error(`PixelFX: colors needs two colours, e.g. ["#ff3c6f", "#ffb02e"]`);
+      c = { brand: [a, b], light: [tint(a, 0.75), "#ffffff"], pulse: b };
+    } else if (scheme) {
+      c = SCHEMES[scheme];
+      if (!c) throw new Error(`PixelFX: unknown scheme "${scheme}". Use one of: ${Object.keys(SCHEMES).join(", ")}`);
+    } else return null;
+    const key = [...c.brand, ...c.light, c.pulse].join();
+    if (!palettes.has(key)) palettes.set(key, { brand: ramp(hex(c.brand[0]), hex(c.brand[1])), light: ramp(hex(c.light[0]), hex(c.light[1])), pulse: c.pulse });
+    return palettes.get(key);
+  }
 
   // A logo pixel: square, very slightly rounded
   function square(ctx, x, y, s, col, a) {
@@ -88,7 +107,7 @@
         age: head, life: rand(0.9, 1.8),
         size: r < 0.38 ? u * 2 : r < 0.55 ? u * 1.5 : u, // the logo mixes two sizes
         // zone: blue on the left shading to cyan on the right, like the logo; buttons: match the fill
-        col: tone(false, zone ? clamp((x - s.bleed) / s.iw + rand(-0.1, 0.1)) : rand(0.08, 0.3)),
+        col: s.tone(false, zone ? clamp((x - s.bleed) / s.iw + rand(-0.1, 0.1)) : rand(0.08, 0.3)),
         a: rand(0.55, 0.95),
       });
     }
@@ -189,7 +208,7 @@
             if (q.dim && p.y > d.tt && p.y < d.tb) a *= 0.3;
             const size = (q.big && k === 0 ? u * 1.7 : u) * (1 - k * 0.18);
             const t = q.kind === "out" ? 1 : 0.15 + 0.7 * (q.d / q.L); // blue at the edge, cyan by the icon
-            square(ctx, snap(p.x, 1), snap(p.y, 1), size, tone(false, t), a);
+            square(ctx, snap(p.x, 1), snap(p.y, 1), size, s.tone(false, t), a);
           }
         }
 
@@ -221,8 +240,8 @@
           if (q.age >= q.life) { s.p.splice(i, 1); continue; }
           const k = q.age / q.life, y = lerp(s.ih + 3, -3, k * (0.6 + 0.4 * k));
           const a = envelope(q.age, q.life, 0.15, 0.55) * (s.onFill ? 0.45 : 0.75);
-          square(ctx, q.x, snap(y, 1), q.size, tone(s.onFill, q.t), a);
-          square(ctx, q.x, snap(y + q.size + 2, 1), q.size * 0.7, tone(s.onFill, q.t), a * 0.4);
+          square(ctx, q.x, snap(y, 1), q.size, s.tone(s.onFill, q.t), a);
+          square(ctx, q.x, snap(y + q.size + 2, 1), q.size * 0.7, s.tone(s.onFill, q.t), a * 0.4);
         }
         return s.p.length > 0;
       },
@@ -291,7 +310,7 @@
           E[i] = e * decay;
           alive = true;
           const x = d.ox + c * pitch, y = d.oy + r * pitch;
-          square(ctx, x, y, d.big[i] ? cell * 1.9 : cell, tone(s.onFill, x / s.iw), e * amax);
+          square(ctx, x, y, d.big[i] ? cell * 1.9 : cell, s.tone(s.onFill, x / s.iw), e * amax);
         }
         return alive;
       },
@@ -327,13 +346,13 @@
             const x = snap(p.x + p.nx * off, 1), y = snap(p.y + p.ny * off, 1);
             const pulse = 1 + 0.22 * Math.sin(wave * 1.7 * tk);
             const size = i === 0 ? head * pulse : (i < 3 ? u * 1.25 : u) * (1 - (i / n) * 0.3);
-            square(ctx, x, y, size, tone(s.onFill, (p.x - b) / s.iw), vis * (1 - i / n) * 0.95);
+            square(ctx, x, y, size, s.tone(s.onFill, (p.x - b) / s.iw), vis * (1 - i / n) * 0.95);
             if (i === 0) { hx = x; hy = y; hn = p; }
           }
           // companion pixel beside the head, jumping between neighbouring cells
           const step = Math.floor(tk / hop), h = HOPS[(step * 7 + k * 3) % HOPS.length];
           const cd = head * 0.95, tx = -hn.ny, ty = hn.nx; // tangent
-          square(ctx, snap(hx + (tx * h[0] + hn.nx * h[1]) * cd, 1), snap(hy + (ty * h[0] + hn.ny * h[1]) * cd, 1), u, tone(s.onFill, (hx - b) / s.iw), vis * 0.7);
+          square(ctx, snap(hx + (tx * h[0] + hn.nx * h[1]) * cd, 1), snap(hy + (ty * h[0] + hn.ny * h[1]) * cd, 1), u, s.tone(s.onFill, (hx - b) / s.iw), vis * 0.7);
           if (s.active && Math.random() < (zone ? 2.4 : 1.6) * s.density * dt) {
             const p = rrPoint(rr, base - gap * rand(1, 4));
             s.p.push({ x: p.x, y: p.y, nx: p.nx, ny: p.ny, age: 0, life: rand(0.6, 1.1), size: u * (Math.random() < 0.35 ? 1.6 : 1), dist: rand(6, zone ? 12 : 7), t: (p.x - b) / s.iw });
@@ -345,7 +364,7 @@
           q.age += dt;
           if (q.age >= q.life) { s.p.splice(i, 1); continue; }
           const e = 1 - Math.pow(1 - q.age / q.life, 2);
-          square(ctx, snap(q.x + q.nx * q.dist * e, 1), snap(q.y + q.ny * q.dist * e, 1), q.size, tone(s.onFill, q.t), envelope(q.age, q.life, 0.1, 0.6) * 0.8);
+          square(ctx, snap(q.x + q.nx * q.dist * e, 1), snap(q.y + q.ny * q.dist * e, 1), q.size, s.tone(s.onFill, q.t), envelope(q.age, q.life, 0.1, 0.6) * 0.8);
         }
         return vis > 0.01 || s.p.length > 0;
       },

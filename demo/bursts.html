@@ -1,0 +1,212 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>FooPixel FX · bursts demo</title>
+<style>
+  :root {
+    color-scheme: dark;
+    --ink: #f1f5ff;
+    --muted: #9aaac0;
+    --faint: #64758f;
+    --night: #07101f;
+    --line: rgba(211, 226, 255, 0.14);
+    --blue: #4b7dff;
+    --cyan: #35c6f4;
+    font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font-synthesis: none;
+  }
+  * { box-sizing: border-box; }
+  a { color: var(--cyan); text-underline-offset: 2px; }
+  body { min-width: 320px; margin: 0; color: var(--ink); background: var(--night); }
+
+  .page { width: min(1320px, calc(100vw - 32px)); margin-inline: auto; padding: 44px 0 90px; }
+  .intro h1 { margin: 0 0 8px; font-size: clamp(1.5rem, 2.6vw, 2rem); font-weight: 780; letter-spacing: -0.01em; }
+  .intro p { margin: 0; max-width: 72ch; color: var(--muted); font-size: 0.92rem; line-height: 1.6; }
+  kbd {
+    padding: 1px 6px; border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 5px;
+    color: var(--ink); font: 600 0.75rem ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+
+  .controls {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 14px 28px;
+    margin: 28px 0 34px; padding: 14px 18px;
+    border: 1px solid var(--line); border-radius: 12px;
+    background: rgba(255, 255, 255, 0.02);
+    color: var(--muted); font-size: 0.8rem;
+  }
+  .controls label { display: inline-flex; align-items: center; gap: 10px; cursor: pointer; }
+  .controls input[type="range"] { width: 110px; accent-color: var(--blue); }
+  .controls input[type="checkbox"] { accent-color: var(--blue); }
+  .controls select {
+    padding: 5px 8px; border: 1px solid var(--line); border-radius: 7px;
+    color: var(--ink); background: #0c1a2d; font: inherit;
+  }
+  .controls output { min-width: 2.4em; color: var(--ink); font-variant-numeric: tabular-nums; }
+  .controls .spacer { flex: 1; }
+  .controls .rm-note { flex-basis: 100%; margin: 0; color: #ffcf8d; }
+  .controls .rm-note[hidden] { display: none; }
+
+  .grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 28px 22px; }
+  @media (max-width: 1180px) { .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (max-width: 620px) { .grid { grid-template-columns: 1fr; } }
+
+  .card h2 { display: flex; align-items: baseline; gap: 10px; margin: 0 0 6px; font-size: 1.05rem; font-weight: 720; }
+  .card h2 kbd { font-size: 0.68rem; color: var(--faint); }
+  .card > p { min-height: 4.6em; margin: 0 0 14px; color: var(--muted); font-size: 0.82rem; line-height: 1.55; }
+  .stage {
+    position: relative; display: grid; place-items: center;
+    height: 200px;
+    border: 1px dashed rgba(152, 183, 238, 0.3); border-radius: 12px;
+    background: rgba(8, 21, 39, 0.88);
+    cursor: crosshair;
+  }
+  .stage:hover { border-color: rgba(53, 198, 244, 0.55); }
+  .stage-hint { position: absolute; bottom: 10px; color: var(--faint); font-size: 0.66rem; pointer-events: none; }
+  .card code {
+    display: block; margin-top: 10px; overflow-x: auto; white-space: nowrap;
+    color: var(--faint); font: 0.7rem ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+
+  .button {
+    display: inline-flex; align-items: center; gap: 10px;
+    min-height: 44px; padding: 0 18px;
+    border: 1px solid var(--line); border-radius: 100px;
+    font: inherit; font-size: 0.78rem; font-weight: 750; letter-spacing: 0.02em;
+    cursor: pointer;
+    transition: transform 160ms ease, background 160ms ease, border-color 160ms ease;
+  }
+  .button:active { transform: scale(0.96); }
+  .button:focus-visible { outline: 2px solid var(--cyan); outline-offset: 3px; }
+  .button-primary { border-color: var(--blue); color: white; background: var(--blue); }
+  .button-primary:hover { background: #5e8aff; }
+  .button-quiet { color: var(--muted); background: rgba(255, 255, 255, 0.03); }
+  .button-quiet:hover { color: var(--ink); background: rgba(255, 255, 255, 0.07); }
+
+  .footnote { margin-top: 48px; color: var(--faint); font-size: 0.8rem; line-height: 1.65; max-width: 78ch; }
+  .footnote code { color: var(--muted); }
+  .footnote pre {
+    margin: 10px 0 0; padding: 14px 16px; overflow-x: auto;
+    border: 1px solid var(--line); border-radius: 10px; background: rgba(255,255,255,0.02);
+    color: var(--muted); font: 0.76rem/1.6 ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+</style>
+</head>
+<body>
+<main class="page">
+  <header class="intro">
+    <h1>Pixel bursts</h1>
+    <p>Eight one-off pixel celebrations you fire from an event, like confetti but built from the FooPixel logo's square pixels in two sizes, shading blue to cyan. Click a button to fire from it, or click anywhere in a stage to fire from the pointer. Keys <kbd>1</kbd>–<kbd>8</kbd> fire each one and <kbd>0</kbd> fires them all. Looking for the hover effects? See the <a href="index.html">hover demo</a>.</p>
+  </header>
+
+  <div class="controls" role="group" aria-label="Burst controls">
+    <label>Amount <input type="range" id="amount" min="0.3" max="2.5" step="0.1" value="1" /><output>1.0×</output></label>
+    <label>Size <input type="range" id="size" min="0.6" max="2" step="0.1" value="1" /><output>1.0×</output></label>
+    <label>Gravity <input type="range" id="gravity" min="0" max="2" step="0.1" value="1" /><output>1.0×</output></label>
+    <label>Speed <input type="range" id="speed" min="0.3" max="2" step="0.1" value="1" /><output>1.0×</output></label>
+    <label>Scheme <select id="scheme"></select></label>
+    <label><input type="checkbox" id="snap" checked /> Snap to pixel grid</label>
+    <span class="spacer"></span>
+    <button class="button button-quiet" id="all" type="button">Fire all 8</button>
+    <p class="rm-note" id="rm-note" hidden>Reduced motion is on for this device, so bursts are skipped. <label><input type="checkbox" id="rm-override" /> Preview anyway</label></p>
+  </div>
+
+  <div class="grid" id="grid"></div>
+
+  <div class="footnote">
+    <p>This page loads <code>dist/foopixel-fx.min.js</code>. Each button calls <code>PixelFX.burst()</code> with the settings above. Without any JavaScript of your own, a data attribute fires a burst on click:</p>
+<pre>&lt;button data-pixel-burst="confetti"&gt;Publish&lt;/button&gt;
+&lt;button data-pixel-burst="firework" data-pixel-burst-amount="1.5"&gt;Upgrade&lt;/button&gt;
+
+PixelFX.burst(button, { style: "shatter" });          // from an element
+PixelFX.burst({ x: e.clientX, y: e.clientY });        // from a point
+PixelFX.burst(button, { style: "rain", scheme: "synthwave" });  // a neon scheme
+PixelFX.configure({ scheme: "cyberpunk" });           // every effect and burst</pre>
+    <p>All bursts share one full-page canvas that ignores the mouse. It is added on the first burst and removed once the last pixel has gone. See the README for every option.</p>
+  </div>
+</main>
+
+<script src="../dist/foopixel-fx.min.js"></script>
+<script>
+/* ======================================================================
+   Demo page wiring
+   ====================================================================== */
+const CONCEPTS = [
+  { style: "burst", name: "Burst", label: "Upload complete", cls: "primary",
+    text: "The classic pop. Pixels fly out in every direction, arc down under gravity and halve in size before they vanish." },
+  { style: "confetti", name: "Confetti", label: "Publish", cls: "primary",
+    text: "A cannon of pixel confetti fired up from the button. Each piece tumbles and sways as it falls, like real paper confetti." },
+  { style: "shatter", name: "Shatter", label: "Remove file", cls: "quiet",
+    text: "The button breaks into its own pixels from the point you clicked, they fall away, and then it snaps back into place." },
+  { style: "shockwave", name: "Shockwave", label: "Copy link", cls: "quiet",
+    text: "Three pixelated rings roll outward from the click like a sonar ping. Quiet and quick, so it suits small confirmations." },
+  { style: "firework", name: "Firework", label: "Upgrade to Pro", cls: "primary",
+    text: "A pixel rocket climbs with a trail behind it, then bursts into twinkling sparks that crackle as they fade out." },
+  { style: "starburst", name: "Starburst", label: "★ Add to favourites", cls: "quiet",
+    text: "An 8-bit sparkle. Rays of pixels step out along eight directions, followed by a second white wave and loose twinkles." },
+  { style: "rain", name: "Pixel rain", label: "Goal reached", cls: "primary",
+    text: "For the big moments. Pixels rain down over the whole page, tumbling and drifting, with a small pop where you clicked." },
+  { style: "gather", name: "Gather & pop", label: "Save changes", cls: "primary",
+    text: "Pixels are pulled in to the click point, hold for a beat, then pop outward. The pause before the pop makes it feel earned." },
+];
+
+const settings = { amount: 1, size: 1, gravity: 1, speed: 1, snap: true, scheme: "foopixel" };
+const fire = (style, target, origin) => PixelFX.burst(target, { ...settings, style, origin });
+
+const grid = document.getElementById("grid");
+CONCEPTS.forEach((c, i) => {
+  const card = document.createElement("section");
+  card.className = "card";
+  card.innerHTML = `
+    <h2>${c.name} <kbd>${i + 1}</kbd></h2>
+    <p>${c.text}</p>
+    <div class="stage">
+      <button class="button button-${c.cls}" type="button">${c.label}</button>
+      <span class="stage-hint">click the button, or anywhere in here</span>
+    </div>
+    <code>PixelFX.burst(button, { style: "${c.style}" })</code>`;
+  const stage = card.querySelector(".stage"), btn = card.querySelector("button");
+  btn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    const origin = e.detail ? { x: e.clientX, y: e.clientY } : null; // keyboard clicks have no pointer position
+    fire(c.style, btn, origin);
+  });
+  stage.addEventListener("click", (e) => {
+    if (c.style === "shatter") return fire(c.style, btn, { x: e.clientX, y: e.clientY });
+    fire(c.style, { x: e.clientX, y: e.clientY });
+  });
+  c.btn = btn;
+  grid.append(card);
+});
+
+const fireAll = () => CONCEPTS.forEach((c, i) => setTimeout(() => fire(c.style, c.btn), i * 280));
+document.getElementById("all").addEventListener("click", fireAll);
+
+addEventListener("keydown", (e) => {
+  if (e.metaKey || e.ctrlKey || e.altKey || e.target.matches("input, select, textarea")) return;
+  if (e.key === "0") return fireAll();
+  const c = CONCEPTS[+e.key - 1];
+  if (c) fire(c.style, c.btn);
+});
+
+for (const id of ["amount", "size", "gravity", "speed"]) {
+  const input = document.getElementById(id), out = input.nextElementSibling;
+  input.addEventListener("input", () => {
+    settings[id] = +input.value;
+    out.textContent = (+input.value).toFixed(1) + "×";
+  });
+}
+const schemeSelect = document.getElementById("scheme");
+schemeSelect.innerHTML = PixelFX.schemes.map((s) => `<option value="${s}">${s}</option>`).join("");
+schemeSelect.addEventListener("change", (e) => (settings.scheme = e.target.value));
+document.getElementById("snap").addEventListener("change", (e) => (settings.snap = e.target.checked));
+
+const reduce = matchMedia("(prefers-reduced-motion: reduce)");
+const note = document.getElementById("rm-note");
+const syncRM = () => { note.hidden = !reduce.matches; };
+syncRM(); reduce.addEventListener?.("change", syncRM);
+document.getElementById("rm-override").addEventListener("change", (e) => PixelFX.configure({ respectReducedMotion: !e.target.checked }));
+</script>
+</body>
+</html>
