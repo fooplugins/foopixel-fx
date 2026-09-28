@@ -2,6 +2,29 @@
 
 Pixel hover effects for drop zones and buttons, based on the pixels breaking off the FooPixel logo. There are four effects: `breakaway`, `uplink`, `dither` and `trace`. Each one draws on a canvas it adds to the element and runs only while the element is hovered, focused, dragged over or held active. The library has no dependencies and is about 6 KB gzipped.
 
+## Effects
+
+These are stills of each effect running on a drop zone and two buttons. Open `demo/index.html` to see them move.
+
+<table>
+  <tr>
+    <td width="50%"><img src="docs/screenshots/breakaway.png" alt="Breakaway effect: pixels detach from the edges of the drop zone and buttons"></td>
+    <td width="50%"><img src="docs/screenshots/uplink.png" alt="Uplink effect: pixels climb the sides of the drop zone towards the upload icon"></td>
+  </tr>
+  <tr>
+    <td><strong><code>breakaway</code></strong>: pixels detach from every edge and step outward, shading blue to cyan.</td>
+    <td><strong><code>uplink</code></strong>: pixels climb the sides and turn in to the upload icon. Buttons fizz with rising pixels.</td>
+  </tr>
+  <tr>
+    <td width="50%"><img src="docs/screenshots/dither.png" alt="Dither effect: a pixel grid lights up under the cursor and fades behind it"></td>
+    <td width="50%"><img src="docs/screenshots/trace.png" alt="Trace effect: two pixel trails run along the border of the drop zone and buttons"></td>
+  </tr>
+  <tr>
+    <td><strong><code>dither</code></strong>: a hidden pixel grid lights up under the cursor and fades behind it.</td>
+    <td><strong><code>trace</code></strong>: two pixel trails run along the border. Also works as a loading state.</td>
+  </tr>
+</table>
+
 ## Install
 
 Plain script tag. This sets `window.PixelFX` and attaches to every `[data-pixel-fx]` element on the page once the DOM is ready:
@@ -82,17 +105,6 @@ zoneFx.setActive(true);
 await upload(file);
 zoneFx.setActive(false);
 ```
-
-## Adding it to foopixel.com
-
-The defaults already match the uploader markup: Uplink finds `.upload-symbol` and `.empty-upload` on its own. Add the attributes and the script:
-
-```html
-<div class="upload-zone" data-upload-zone data-pixel-fx="breakaway" role="button" tabindex="0">…</div>
-<a class="button button-primary" href="#uploader" data-pixel-fx="trace" data-pixel-preset="button" data-pixel-fill="light">Upload an image ↗</a>
-```
-
-No CSS changes are needed. The existing `.is-dragging` handling stays as it is.
 
 ## How it fits into your layout
 

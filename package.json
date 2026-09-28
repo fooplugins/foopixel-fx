@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "Pixel hover effects for drop zones and buttons, based on the FooPixel logo.",
   "license": "MIT",
-  "private": true,
+  "private": false,
   "type": "module",
   "main": "dist/foopixel-fx.min.js",
   "module": "dist/foopixel-fx.esm.min.js",
