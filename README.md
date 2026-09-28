@@ -2,9 +2,15 @@
 
 Pixel hover effects for drop zones and buttons, based on the pixels breaking off the FooPixel logo. There are four effects: `breakaway`, `uplink`, `dither` and `trace`. Each one draws on a canvas it adds to the element and runs only while the element is hovered, focused, dragged over or held active. The library has no dependencies and is about 6 KB gzipped.
 
+<p align="center">
+  <a href="docs/foopixel-fx-showcase.mp4"><img src="docs/showcase-poster.png" width="480" alt="Watch the FooPixel FX showcase video"></a>
+  <br>
+  <a href="docs/foopixel-fx-showcase.mp4"><strong>▶ Watch the 18-second showcase</strong></a>
+</p>
+
 ## Effects
 
-These are stills of each effect running on a drop zone and two buttons. Open `demo/index.html` to see them move.
+These are stills of each effect running on a drop zone and two buttons. To see them move, watch the [showcase video](docs/foopixel-fx-showcase.mp4) or open `demo/index.html`.
 
 <table>
   <tr>
