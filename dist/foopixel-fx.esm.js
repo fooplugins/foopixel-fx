@@ -1,5 +1,5 @@
 /*!
- * FooPixel FX v1.1.0
+ * FooPixel FX v1.1.1
  * Pixel hover effects and bursts for drop zones and buttons, drawn from the FooPixel logo.
  * Effects: breakaway, uplink, dither, trace.
  * Bursts: burst, confetti, shatter, shockwave, firework, starburst, rain, gather.
@@ -8,7 +8,7 @@
 const PixelFX = (() => {
   "use strict";
 
-  const VERSION = "1.1.0";
+  const VERSION = "1.1.1";
   const hasWindow = typeof window !== "undefined";
   const reduce = hasWindow && window.matchMedia
     ? window.matchMedia("(prefers-reduced-motion: reduce)")
@@ -389,7 +389,7 @@ const PixelFX = (() => {
             if (i === 0) { hx = x; hy = y; hn = p; }
           }
           // companion pixel beside the head, jumping between neighbouring cells
-          const step = Math.floor(tk / hop), h = HOPS[(step * 7 + k * 3) % HOPS.length];
+          const step = Math.floor(tk / hop), N = HOPS.length, h = HOPS[(((step * 7 + k * 3) % N) + N) % N];
           const cd = head * 0.95, tx = -hn.ny, ty = hn.nx; // tangent
           square(ctx, snap(hx + (tx * h[0] + hn.nx * h[1]) * cd, 1), snap(hy + (ty * h[0] + hn.ny * h[1]) * cd, 1), u, s.tone(s.onFill, (hx - b) / s.iw), vis * 0.7);
           if (s.active && Math.random() < (zone ? 2.4 : 1.6) * s.density * dt) {
@@ -473,7 +473,7 @@ const PixelFX = (() => {
   }
 
   function burstFrame(now) {
-    const raw = Math.min(0.05, (now - layer.last) / 1000);
+    const raw = Math.min(0.05, Math.max(0, (now - layer.last) / 1000));
     layer.last = now;
     if (window.innerWidth !== layer.w || window.innerHeight !== layer.h) mountLayer();
     const ctx = layer.ctx, P = layer.parts;
@@ -857,7 +857,8 @@ const PixelFX = (() => {
 
     frame(now) {
       if (this.destroyed) return;
-      const raw = Math.min(0.05, (now - this.last) / 1000);
+      // the first frame's timestamp can be a little earlier than the event that started the loop
+      const raw = Math.min(0.05, Math.max(0, (now - this.last) / 1000));
       this.last = now;
       const dt = raw * config.speed * (+this.opts.speed || 1);
       this.t += dt;

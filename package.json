@@ -1,6 +1,6 @@
 {
   "name": "@fooplugins/foopixel-fx",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Pixel hover effects and bursts for drop zones and buttons, based on the FooPixel logo.",
   "license": "MIT",
   "private": false,

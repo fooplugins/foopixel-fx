@@ -61,7 +61,7 @@
   }
 
   function burstFrame(now) {
-    const raw = Math.min(0.05, (now - layer.last) / 1000);
+    const raw = Math.min(0.05, Math.max(0, (now - layer.last) / 1000));
     layer.last = now;
     if (window.innerWidth !== layer.w || window.innerHeight !== layer.h) mountLayer();
     const ctx = layer.ctx, P = layer.parts;

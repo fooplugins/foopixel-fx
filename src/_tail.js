@@ -137,7 +137,8 @@
 
     frame(now) {
       if (this.destroyed) return;
-      const raw = Math.min(0.05, (now - this.last) / 1000);
+      // the first frame's timestamp can be a little earlier than the event that started the loop
+      const raw = Math.min(0.05, Math.max(0, (now - this.last) / 1000));
       this.last = now;
       const dt = raw * config.speed * (+this.opts.speed || 1);
       this.t += dt;
