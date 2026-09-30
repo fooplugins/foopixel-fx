@@ -139,6 +139,7 @@ With Uplink you can also mark the elements directly instead of passing selectors
 | `data-pixel-burst-amount` | multiplier on the number of pixels | `1` |
 | `data-pixel-burst-size` | multiplier on pixel size | `1` |
 | `data-pixel-burst-speed` | multiplier on speed | `1` |
+| `data-pixel-burst-height` | Firework: how far the rocket climbs, in px | random 200–260 |
 | `data-pixel-burst-scheme` | a [colour scheme](#colour-schemes) for this burst | global colours |
 | `data-pixel-burst-colors` | your own gradient, e.g. `#ff7a00,#ff00c8` | none |
 
@@ -189,6 +190,7 @@ PixelFX.burst(button, {
   scheme: "synthwave",                // this burst only; defaults to the global colours
 });
 PixelFX.burst(button, { style: "shatter", origin: { x: e.clientX, y: e.clientY } }); // where the break starts
+PixelFX.burst(button, { style: "firework", height: 120 }); // climb 120px before bursting (default: a random 200–260)
 
 PixelFX.bursts;                       // every style name
 PixelFX.schemes;                      // every colour scheme name

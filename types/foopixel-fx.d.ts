@@ -56,6 +56,8 @@ export interface PixelBurstOptions {
   colors?: [string, string] | string;
   /** Shatter: the viewport point the break spreads from. Defaults to the element's centre. */
   origin?: { x: number; y: number };
+  /** Firework: how far the rocket climbs, in pixels, before it bursts. Defaults to a random 200–260. */
+  height?: number;
 }
 
 export interface PixelFXConfig {

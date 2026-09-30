@@ -4,7 +4,7 @@
   // added on the first burst and removed again as soon as the last pixel is gone.
   const GRAVITY = 900; // px/s²
   const MAX_PIXELS = 4000;
-  const BURST_DEFAULTS = { style: "burst", amount: 1, size: 1, speed: 1, gravity: 1, snap: true, scheme: null, colors: null, origin: null };
+  const BURST_DEFAULTS = { style: "burst", amount: 1, size: 1, speed: 1, gravity: 1, snap: true, scheme: null, colors: null, origin: null, height: null };
   const layer = { cv: null, ctx: null, w: 0, h: 0, dpr: 1, parts: [], raf: 0, last: 0 };
 
   function mountLayer() {
@@ -184,8 +184,10 @@
     },
 
     // A pixel rocket climbs, then explodes into twinkling, crackling sparks.
+    // height: how far it climbs in px before bursting (a random 200-260 by default).
     firework(b, o) {
-      const tx = o.x + rand(-30, 30), ty = Math.max(50, o.y - rand(200, 260));
+      const climb = Number.isFinite(+o.height) && o.height !== null ? +o.height : rand(200, 260);
+      const tx = o.x + rand(-30, 30), ty = Math.max(50, o.y - climb);
       const trail = (p) => b.add({ x: p.x + rand(-2, 2), y: p.y, vy: rand(20, 60), g: 0.15, life: rand(0.3, 0.55),
                                    s: b.px(Math.random() < 0.3 ? 5 : 4), c: b.pick(rand(0.5, 1)), fade: 0.2 });
       b.add({ life: 0.5, s: b.px(7), c: b.white(), emit: trail, every: 0.012,
@@ -300,6 +302,7 @@
         amount: d.pixelBurstAmount ? +d.pixelBurstAmount : undefined,
         size: d.pixelBurstSize ? +d.pixelBurstSize : undefined,
         speed: d.pixelBurstSpeed ? +d.pixelBurstSpeed : undefined,
+        height: d.pixelBurstHeight ? +d.pixelBurstHeight : undefined,
         scheme: d.pixelBurstScheme,
         colors: d.pixelBurstColors,
         origin: e.detail ? { x: e.clientX, y: e.clientY } : null, // keyboard clicks have no pointer position

@@ -1,5 +1,5 @@
 /*!
- * FooPixel FX v1.1.1
+ * FooPixel FX v1.1.2
  * Pixel hover effects and bursts for drop zones and buttons, drawn from the FooPixel logo.
  * Effects: breakaway, uplink, dither, trace.
  * Bursts: burst, confetti, shatter, shockwave, firework, starburst, rain, gather.
@@ -8,7 +8,7 @@
 const PixelFX = (() => {
   "use strict";
 
-  const VERSION = "1.1.1";
+  const VERSION = "1.1.2";
   const hasWindow = typeof window !== "undefined";
   const reduce = hasWindow && window.matchMedia
     ? window.matchMedia("(prefers-reduced-motion: reduce)")
