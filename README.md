@@ -8,7 +8,7 @@ Pixel hover effects and bursts for drop zones and buttons, based on the pixels b
 Both come in the FooPixel blue and six neon colour schemes, or your own colours. The library has no dependencies and is about 10 KB gzipped.
 
 <p align="center">
-  <a href="docs/foopixel-fx-showcase.mp4"><img src="docs/showcase-poster.png" width="480" alt="Watch the FooPixel FX showcase video"></a>
+  <a href="https://foopixel.com/fooplugins/a/esRhT6qfFB"><img src="docs/showcase-poster.png" width="480" alt="Watch the FooPixel FX showcase video"></a>
   <br>
   <a href="docs/foopixel-fx-showcase.mp4"><strong>▶ Watch the 18-second showcase</strong></a>
 </p>
