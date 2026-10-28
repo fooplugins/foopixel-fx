@@ -239,10 +239,21 @@
       setColors(config.colors.brand, config.colors.light);
     }
     live.forEach((i) => { i.refresh(); i.update(); });
+    // lets add-ons such as PixelFX.progress repaint with the new settings
+    if (hasWindow) window.dispatchEvent(new CustomEvent("pixelfx:configure"));
     return JSON.parse(JSON.stringify(config));
+  }
+
+  /** A copy of the current global settings. Unlike configure(), it changes and redraws nothing. */
+  function settings() { return JSON.parse(JSON.stringify(config)); }
+
+  /** The colours for a named scheme, or the current global colours when no name is given. */
+  function colors(name) {
+    if (name && !SCHEMES[name]) throw new Error(`PixelFX: unknown scheme "${name}". Use one of: ${Object.keys(SCHEMES).join(", ")}`);
+    return copyScheme(name ? SCHEMES[name] : config.colors);
   }
 
   reduce.addEventListener?.("change", () => live.forEach((i) => i.update()));
 
-  return { VERSION, attach, scan, get, destroy, all, configure, burst, effects: Object.keys(FX), bursts: Object.keys(BURSTS), schemes: Object.keys(SCHEMES) };
+  return { VERSION, attach, scan, get, destroy, all, configure, settings, colors, burst, effects: Object.keys(FX), bursts: Object.keys(BURSTS), schemes: Object.keys(SCHEMES) };
 })();

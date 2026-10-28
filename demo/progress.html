@@ -1,0 +1,265 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>FooPixel FX · progress demo</title>
+<style>
+  :root {
+    color-scheme: dark;
+    --ink: #f1f5ff;
+    --muted: #9aaac0;
+    --faint: #64758f;
+    --night: #07101f;
+    --line: rgba(211, 226, 255, 0.14);
+    --blue: #4b7dff;
+    --cyan: #35c6f4;
+    font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font-synthesis: none;
+  }
+  * { box-sizing: border-box; }
+  a { color: var(--cyan); text-underline-offset: 2px; }
+  body { min-width: 320px; margin: 0; color: var(--ink); background: var(--night); }
+
+  .page { width: min(1320px, calc(100vw - 32px)); margin-inline: auto; padding: 44px 0 90px; }
+  .intro h1 { margin: 0 0 8px; font-size: clamp(1.5rem, 2.6vw, 2rem); font-weight: 780; letter-spacing: -0.01em; }
+  .intro p { margin: 0; max-width: 76ch; color: var(--muted); font-size: 0.92rem; line-height: 1.6; }
+
+  .controls {
+    position: sticky; top: 0; z-index: 10;
+    display: flex; flex-wrap: wrap; align-items: center; gap: 12px 24px;
+    margin: 28px 0 34px; padding: 14px 18px;
+    border: 1px solid var(--line); border-radius: 12px;
+    background: rgba(9, 19, 35, 0.94); backdrop-filter: blur(8px);
+    color: var(--muted); font-size: 0.8rem;
+  }
+  .controls label { display: inline-flex; align-items: center; gap: 10px; cursor: pointer; }
+  .controls input[type="range"] { width: 150px; accent-color: var(--blue); }
+  .controls input[type="checkbox"] { accent-color: var(--blue); }
+  .controls select {
+    padding: 5px 8px; border: 1px solid var(--line); border-radius: 7px;
+    color: var(--ink); background: #0c1a2d; font: inherit;
+  }
+  .controls output { min-width: 3em; color: var(--ink); font-variant-numeric: tabular-nums; }
+  .controls .spacer { flex: 1; }
+  .controls .rm-note { flex-basis: 100%; margin: 0; color: #ffcf8d; }
+  .controls .rm-note[hidden] { display: none; }
+  .seg { display: inline-flex; padding: 3px; border: 1px solid var(--line); border-radius: 9px; background: #0c1a2d; }
+  .seg button { padding: 5px 11px; border: 0; border-radius: 6px; color: var(--muted); background: none; font: inherit; cursor: pointer; }
+  .seg button[aria-pressed="true"] { color: white; background: var(--blue); }
+
+  .button {
+    display: inline-flex; align-items: center; gap: 10px;
+    min-height: 36px; padding: 0 16px;
+    border: 1px solid var(--line); border-radius: 100px;
+    font: inherit; font-size: 0.78rem; font-weight: 750; letter-spacing: 0.02em;
+    cursor: pointer;
+  }
+  .button:focus-visible { outline: 2px solid var(--cyan); outline-offset: 3px; }
+  .button-primary { min-width: 116px; justify-content: center; border-color: var(--blue); color: white; background: var(--blue); }
+  .button-quiet { color: var(--muted); background: rgba(255, 255, 255, 0.03); }
+  .button-quiet:hover { color: var(--ink); background: rgba(255, 255, 255, 0.07); }
+
+  .grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 28px 22px; }
+  @media (max-width: 1100px) { .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (max-width: 640px) { .grid { grid-template-columns: 1fr; } }
+
+  .card h2 { display: flex; align-items: baseline; gap: 10px; margin: 0 0 6px; font-size: 1.05rem; font-weight: 720; }
+  .card h2 code { color: var(--faint); font: 0.7rem ui-monospace, SFMono-Regular, Menlo, monospace; }
+  .card > p { min-height: 3.2em; margin: 0 0 14px; color: var(--muted); font-size: 0.82rem; line-height: 1.55; }
+  .stage {
+    display: flex; align-items: center; gap: 12px; min-height: 120px; padding: 18px;
+    border: 1px solid var(--line); border-radius: 12px; background: rgba(8, 21, 39, 0.88);
+  }
+  .stage .name { display: none; flex: 1 1 auto; min-width: 0; overflow: hidden; color: var(--ink); font-size: 0.8rem; white-space: nowrap; text-overflow: ellipsis; }
+  .stage .pct { flex: 0 0 3.2em; color: var(--muted); font: 0.72rem ui-monospace, SFMono-Regular, Menlo, monospace; text-align: right; }
+
+  /* Each bar sizes itself from its element: give it a height (and a width if you like). */
+  .bar { flex: 1 1 auto; min-width: 0; height: 24px; }
+  .bar[data-pixel-progress="chomper"] { height: 36px; }
+  .bar[data-pixel-progress="blocks"] { height: 36px; }
+  .bar[data-pixel-progress="hearts"] { height: 32px; }
+  .bar[data-pixel-progress="lcd"] { height: 70px; }
+  .bar[data-pixel-progress="beam"] { height: 28px; }
+  .bar[data-pixel-progress="ring"] { flex: 0 0 auto; width: 120px; height: 120px; margin-inline: auto; }
+  .bar[data-pixel-progress="battery"] { height: 55px; }
+  .bar[data-pixel-progress="mosaic"] { height: 110px; }
+  .bar[data-pixel-progress="tank"] { height: 70px; }
+  .bar[data-pixel-progress="scanner"] { height: 18px; }
+
+  /* Small and Mini: the same bars at in-app sizes, in a row like an upload queue */
+  body:not([data-size="large"]) .stage { min-height: 0; padding: 10px 12px; }
+  body:not([data-size="large"]) .stage .name { display: block; }
+  body:not([data-size="large"]) .bar { flex: 0 1 220px; height: 12px; }
+  body[data-size="small"] .bar[data-pixel-progress="chomper"] { height: 18px; }
+  body[data-size="small"] .bar:is([data-pixel-progress="hearts"], [data-pixel-progress="beam"]) { height: 16px; }
+  body[data-size="small"] .bar:is([data-pixel-progress="lcd"], [data-pixel-progress="battery"], [data-pixel-progress="tank"]) { height: 28px; }
+  body[data-size="small"] .bar:is([data-pixel-progress="ring"], [data-pixel-progress="mosaic"]) { flex: 0 0 auto; width: 56px; height: 56px; margin: 0; }
+  body[data-size="mini"] .bar { flex-basis: 130px; height: 8px; }
+  body[data-size="mini"] .bar[data-pixel-progress="chomper"] { height: 9px; }
+  body[data-size="mini"] .bar:is([data-pixel-progress="lcd"], [data-pixel-progress="battery"], [data-pixel-progress="tank"]) { height: 14px; }
+  body[data-size="mini"] .bar:is([data-pixel-progress="ring"], [data-pixel-progress="mosaic"]) { flex: 0 0 auto; width: 22px; height: 22px; margin: 0; }
+
+  .footnote { margin-top: 48px; color: var(--faint); font-size: 0.8rem; line-height: 1.65; max-width: 82ch; }
+  .footnote code { color: var(--muted); }
+  .footnote pre {
+    margin: 10px 0 0; padding: 14px 16px; overflow-x: auto;
+    border: 1px solid var(--line); border-radius: 10px; background: rgba(255, 255, 255, 0.02);
+    color: var(--muted); font: 0.76rem/1.6 ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+  .examples { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 22px; margin-top: 40px; }
+  @media (max-width: 760px) { .examples { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body data-size="large">
+<main class="page">
+  <header class="intro">
+    <h1>Pixel progress bars</h1>
+    <p>Thirteen progress bars drawn in the FooPixel logo's square pixels, from <code>dist/foopixel-fx-progress.min.js</code>, an optional add-on loaded after the core library. Play a simulated upload (it stalls and spurts like a real one), drag the slider, or make every bar finish or fail. Switch the size to see the same bars at in-app sizes. Looking for the hover effects? See the <a href="index.html">hover demo</a> or the <a href="bursts.html">bursts</a>.</p>
+  </header>
+
+  <div class="controls" role="group" aria-label="Progress controls">
+    <button class="button button-primary" id="play" type="button">Play upload</button>
+    <label>Value <input type="range" id="value" min="0" max="100" step="0.5" value="42" /><output id="value-out">42%</output></label>
+    <label>Speed <input type="range" id="speed" min="0.5" max="3" step="0.1" value="1" /><output id="speed-out">1.0×</output></label>
+    <label>Scheme <select id="scheme"></select></label>
+    <span class="seg" role="group" aria-label="Size">
+      <button type="button" data-size="large" aria-pressed="true">Large</button>
+      <button type="button" data-size="small" aria-pressed="false">Small</button>
+      <button type="button" data-size="mini" aria-pressed="false">Mini</button>
+    </span>
+    <label><input type="checkbox" id="burst" checked /> Burst on finish</label>
+    <span class="spacer"></span>
+    <button class="button button-quiet" id="done" type="button">Finish</button>
+    <button class="button button-quiet" id="fail" type="button">Fail</button>
+    <button class="button button-quiet" id="reset" type="button">Reset</button>
+    <p class="rm-note" id="rm-note" hidden>Reduced motion is on for this device, so the bars update without animating. <label><input type="checkbox" id="rm-override" /> Preview animation anyway</label></p>
+  </div>
+
+  <div class="grid" id="grid"></div>
+
+  <div class="examples">
+    <section class="card">
+      <h2>Wrapping a &lt;progress&gt; <code>beam</code></h2>
+      <p>The native element stays for screen readers and is the source of truth: this one is driven only by setting <code>progress.value</code>.</p>
+      <div class="stage"><div class="bar" data-pixel-progress="beam" id="native-host"><progress id="native" value="10" max="100">10%</progress></div></div>
+    </section>
+    <section class="card">
+      <h2>HTML only <code>data-pixel-value</code></h2>
+      <p>No API calls: this bar follows its <code>data-pixel-value</code> and <code>data-pixel-state</code> attributes.</p>
+      <div class="stage"><div class="bar" id="attr-bar" data-pixel-progress="segments" data-pixel-value="25" data-pixel-scheme="sunset" data-pixel-label="Export"></div></div>
+    </section>
+  </div>
+
+  <div class="footnote">
+    <p>Load the add-on after the core. Any element with <code>data-pixel-progress</code> becomes a bar; give it a height and the pixel size follows.</p>
+<pre>&lt;script src="foopixel-fx.min.js"&gt;&lt;/script&gt;
+&lt;script src="foopixel-fx-progress.min.js"&gt;&lt;/script&gt;
+
+&lt;div data-pixel-progress="segments" data-pixel-value="40" data-pixel-label="Upload"&gt;&lt;/div&gt;
+&lt;div data-pixel-progress="beam"&gt;&lt;progress value="40" max="100"&gt;&lt;/progress&gt;&lt;/div&gt;
+
+const bar = PixelFX.progress(el, "ring", { burst: "confetti" });
+bar.set(42);        // 0–100 by default; set(null) for indeterminate
+bar.done();         // or reaching max finishes it
+bar.fail();</pre>
+  </div>
+</main>
+
+<script src="../dist/foopixel-fx.min.js"></script>
+<script src="../dist/foopixel-fx-progress.min.js"></script>
+<script>
+const STYLES = [
+  ["segments", "LED segments", "The everyday bar: uploads, exports, anything with a real percentage.", "export.zip"],
+  ["dither", "Dither front", "Soft loading where the exact edge doesn't matter: imports, processing.", "import.csv"],
+  ["chomper", "Chomper", "Playful waits: generating a gallery, onboarding.", "Spring gallery"],
+  ["blocks", "Block stack", "Batches and queues: each finished item drops in as a block.", "Batch · 12 items"],
+  ["snake", "Pixel snake", "Long, steady jobs: a snake winds along the path it has covered.", "launch.mp4"],
+  ["hearts", "Hearts", "Quotas and allowances. Hearts stay red in every scheme.", "Credits today"],
+  ["lcd", "LCD counter", "When the number is the point. Best at small sizes and up.", "Upload limit"],
+  ["beam", "Upload beam", "Uploads: data pixels stream across and stack on the leading edge.", "cover.webp"],
+  ["ring", "Pixel ring", "Compact spots: a busy button, an avatar upload, a grid tile.", "avatar.png"],
+  ["battery", "Battery", "Storage and capacity. Amber, then red, as it empties.", "Library storage"],
+  ["mosaic", "Mosaic reveal", "Image work: the picture sharpens from blocks to full detail.", "holiday.heic"],
+  ["tank", "Pixel rain tank", "Filling something up: a gallery, a batch, a cache.", "Summer gallery"],
+  ["scanner", "Scanner", "No percentage yet: connecting, waiting on the server.", "api.example.com"],
+];
+const grid = document.getElementById("grid");
+grid.innerHTML = STYLES.map(([style, name, about, sample]) => `
+  <section class="card">
+    <h2>${name} <code>${style}</code></h2>
+    <p>${about}</p>
+    <div class="stage">
+      <span class="name">${sample}</span>
+      <div class="bar" data-pixel-progress="${style}" data-pixel-label="${name}"${style === "mosaic" ? ' data-pixel-image="logo.png"' : ""}${style === "scanner" ? "" : ' data-pixel-value="42"'}></div>
+      <span class="pct" aria-hidden="true">42%</span>
+    </div>
+  </section>`).join("");
+// the data attributes are read on scan; these were added after the add-on loaded
+const bars = PixelFX.progress.scan(grid);
+
+const $ = (id) => document.getElementById(id);
+const native = $("native"), attrBar = $("attr-bar");
+const state = { value: 42, playing: false, until: 0, rate: 0 };
+const show = () => {
+  $("value").value = state.value;
+  $("value-out").textContent = `${Math.round(state.value)}%`;
+  document.querySelectorAll(".stage .pct").forEach((el) => (el.textContent = `${Math.round(state.value)}%`));
+};
+const setAll = (value) => {
+  state.value = Math.min(100, Math.max(0, value));
+  bars.forEach((bar) => { if (bar.style !== "scanner" || state.value >= 100) bar.set(state.value); });
+  native.value = state.value;                                  // the wrapped <progress> follows
+  attrBar.dataset.pixelValue = state.value.toFixed(1);         // the HTML-only bar follows
+  if (state.value < 100) delete attrBar.dataset.pixelState;
+  show();
+};
+const all = () => [...bars, PixelFX.progress.get($("native-host")), PixelFX.progress.get(attrBar)].filter(Boolean);
+const setBurst = () => all().forEach((bar) => (bar.opts.burst = $("burst").checked && bar.style === "ring" ? "confetti" : false));
+
+$("play").addEventListener("click", () => {
+  if (state.playing) { state.playing = false; $("play").textContent = "Play upload"; all().forEach((b) => b.setActive(false)); return; }
+  if (state.value >= 100 || all().some((b) => b.state === "fail")) { all().forEach((b) => b.reset()); setAll(0); }
+  state.playing = true;
+  $("play").textContent = "Pause";
+  bars.find((b) => b.style === "scanner").setActive(true);
+});
+$("value").addEventListener("input", (e) => setAll(+e.target.value));
+$("speed").addEventListener("input", (e) => { PixelFX.configure({ speed: +e.target.value }); $("speed-out").textContent = `${(+e.target.value).toFixed(1)}×`; });
+const schemeSelect = $("scheme");
+schemeSelect.innerHTML = PixelFX.schemes.map((s) => `<option value="${s}">${s}</option>`).join("");
+schemeSelect.addEventListener("change", () => PixelFX.configure({ scheme: schemeSelect.value }));
+document.querySelectorAll("[data-size]").forEach((button) => button.addEventListener("click", () => {
+  document.body.dataset.size = button.dataset.size;
+  document.querySelectorAll("[data-size]").forEach((b) => b.setAttribute("aria-pressed", String(b === button)));
+}));
+$("burst").addEventListener("change", setBurst);
+$("done").addEventListener("click", () => { state.playing = false; $("play").textContent = "Play upload"; setAll(100); all().forEach((b) => b.done()); attrBar.dataset.pixelState = "done"; });
+$("fail").addEventListener("click", () => { state.playing = false; $("play").textContent = "Play upload"; all().forEach((b) => b.fail()); attrBar.dataset.pixelState = "fail"; });
+$("reset").addEventListener("click", () => { state.playing = false; $("play").textContent = "Play upload"; delete attrBar.dataset.pixelState; all().forEach((b) => b.reset()); setAll(0); });
+
+const reduce = matchMedia("(prefers-reduced-motion: reduce)");
+$("rm-note").hidden = !reduce.matches;
+$("rm-override").addEventListener("change", (e) => PixelFX.configure({ respectReducedMotion: !e.target.checked }));
+
+// a simulated upload that stalls and spurts like a real network
+let last = performance.now();
+requestAnimationFrame(function loop(now) {
+  const dt = Math.min(0.05, (now - last) / 1000);
+  last = now;
+  if (state.playing) {
+    if (now > state.until) {
+      const r = Math.random();
+      state.rate = r < 0.16 ? 0 : r < 0.42 ? 4 : r < 0.8 ? 12 : 30;
+      state.until = now + 350 + Math.random() * 1100;
+    }
+    setAll(state.value + state.rate * dt * (+$("speed").value));
+    if (state.value >= 100) { state.playing = false; $("play").textContent = "Play upload"; attrBar.dataset.pixelState = "done"; }
+  }
+  requestAnimationFrame(loop);
+});
+setBurst();
+show();
+</script>
+</body>
+</html>

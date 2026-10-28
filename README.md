@@ -1,11 +1,12 @@
 # FooPixel FX
 
-Pixel hover effects and bursts for drop zones and buttons, based on the pixels breaking off the FooPixel logo.
+Pixel hover effects, bursts and progress bars for drop zones and buttons, based on the pixels breaking off the FooPixel logo.
 
 - **Hover effects**: `breakaway`, `uplink`, `dither` and `trace`. Each one draws on a canvas it adds to the element and runs only while the element is hovered, focused, dragged over or held active.
 - **Bursts**: `burst`, `confetti`, `shatter`, `shockwave`, `firework`, `starburst`, `rain` and `gather`. These are one-off pixel celebrations, like confetti, that you fire from a click or any other event.
+- **Progress bars** (optional add-on): thirteen pixel bars, from plain LED segments to a pixel snake and a battery. See [Progress bars](#progress-bars).
 
-Both come in the FooPixel blue and six neon colour schemes, or your own colours. The library has no dependencies and is about 10 KB gzipped.
+All of them come in the FooPixel blue and six neon colour schemes, or your own colours. The library has no dependencies and is about 11 KB gzipped. The progress add-on is a separate file of about 7 KB gzipped, so you only load it if you use it.
 
 <p align="center">
   <a href="https://foopixel.com/fooplugins/a/esRhT6qfFB"><img src="docs/showcase-poster.png" width="480" alt="Watch the FooPixel FX showcase video"></a>
@@ -38,7 +39,7 @@ These are stills of each effect running on a drop zone and two buttons. To see t
 
 ## Bursts
 
-Fire one from a button click, a finished upload, a saved form or any other moment worth marking. Open `demo/bursts.html` to try them all, with sliders for amount, size, gravity and speed.
+Fire one from a button click, a finished upload, a saved form or any other moment worth marking. Open `demo/bursts.html` to try them all, with sliders for amount, size, gravity and speed, and `demo/shatter.html` to watch a photo shatter into its own pixels.
 
 <img src="docs/screenshots/bursts.png" alt="The eight pixel bursts: burst, confetti, shatter, shockwave, firework, starburst, pixel rain, and gather and pop">
 
@@ -84,6 +85,86 @@ PixelFX.burst(button, { colors: ["#ff7a00", "#ff00c8"] });      // your own two 
 
 With your own colours, the pale sparks and the Uplink ring are worked out from the pair. Two colours from opposite sides of the colour wheel, like orange and cyan, blend through a muddy grey in the middle, so neighbouring colours give a cleaner gradient.
 
+## Progress bars
+
+An optional add-on, in its own file, that draws progress bars in the same square pixels and colour schemes. It needs the core library, so load it second.
+
+<img src="docs/screenshots/progress.png" alt="The thirteen pixel progress bars at 64%: LED segments, dither front, chomper, block stack, pixel snake, hearts, LCD counter, upload beam, pixel ring, battery, mosaic reveal, pixel rain tank and scanner">
+
+| Style | What it does | Good for |
+|---|---|---|
+| `segments` | Lit LED blocks; the next one blinks while it runs | Uploads, exports, anything with a real percentage |
+| `dither` | The edge dissolves through a dither pattern | Processing where the exact edge doesn't matter |
+| `chomper` | A pixel muncher eats the dots along the track | Playful waits |
+| `blocks` | Each step drops in as a block | Batches and queues |
+| `snake` | A snake winds along the path it has covered | Long encodes |
+| `hearts` | RPG hearts fill up. They stay red in every scheme | Quotas and allowances |
+| `lcd` | Big pixel digits over a mini bar | When the number is the point |
+| `beam` | Data pixels stream across and land on the leading edge | Uploads |
+| `ring` | A ring of squares, with the percentage inside when there's room | Busy buttons, avatars, tiles |
+| `battery` | Cells go green, amber, then red as it empties | Storage and capacity |
+| `mosaic` | An image sharpens from big blocks to full detail | Image processing |
+| `tank` | Pixel rain fills a tank with a wavy surface | Filling a gallery or batch |
+| `scanner` | A sweeping light, for waits with no percentage | Connecting, waiting on a server |
+
+```html
+<script src="/assets/foopixel-fx.min.js" defer></script>
+<script src="/assets/foopixel-fx-progress.min.js" defer></script>
+
+<div data-pixel-progress="segments" data-pixel-value="40" data-pixel-label="Upload"></div>
+
+<!-- or wrap a native <progress>, which stays the accessible source of truth -->
+<div data-pixel-progress="beam"><progress value="40" max="100">40%</progress></div>
+```
+
+The script attaches to every `[data-pixel-progress]` element when the DOM is ready (add `data-manual` to call `PixelFX.progress.scan()` yourself). As an ES module it's `import progress from "@fooplugins/foopixel-fx/progress"`, which also adds `PixelFX.progress`.
+
+**Size it with CSS.** A bar fills its element and takes its pixel size from the element's height, so the same style works as a 140px ring or an 8px row in a table. Elements with no height get a sensible one per style. `chomper` needs at least 9px, and `lcd` reads best from about 28px tall.
+
+**Update it however suits you.** Each of these drives the bar:
+
+- call `bar.set(value)`;
+- change `data-pixel-value`;
+- set the wrapped `<progress>` element's `value`.
+
+Reaching the max finishes the bar with a short flash.
+
+| Attribute | Values | Default |
+|---|---|---|
+| `data-pixel-progress` | a style from the table above | `segments` |
+| `data-pixel-value` | the current value; empty for indeterminate | `0` (scanner: indeterminate) |
+| `data-pixel-max` | the value that counts as complete | `100` |
+| `data-pixel-state` | `done`, `fail` or `active` (keep animating) | none |
+| `data-pixel-label` | accessible name, if the element has no `aria-label` | none |
+| `data-pixel-scheme` | a [colour scheme](#colour-schemes) for this bar | global colours |
+| `data-pixel-colors` | your own gradient, e.g. `#ff7a00,#ff00c8` | none |
+| `data-pixel-track` | hex colour for the unlit pixels; set this on light backgrounds | `#13233b` |
+| `data-pixel-done-burst` | a [burst](#bursts) to fire when the bar finishes | none |
+| `data-pixel-auto-done` | `false` to stay at max without finishing | `true` |
+| `data-pixel-count` | Hearts: how many hearts | as many as fit, up to 10 |
+| `data-pixel-image` | Mosaic: the image to reveal | the bar's gradient |
+| `data-pixel-speed` | multiplier on speed for this bar | `1` |
+
+```js
+const bar = PixelFX.progress(el, "ring", { burst: "confetti", label: "Avatar upload" });
+
+bar.set(42);           // 0–100 by default
+bar.set(3, 12);        // value and max together
+bar.set(null);         // indeterminate (best with "scanner")
+bar.setActive(true);   // keep animating between updates, e.g. while waiting on a response
+bar.done();            // fill, flash, and fire the done burst
+bar.fail();            // turn red with a short glitch; the value stays
+bar.reset();           // back to empty
+bar.state;             // "idle", "active", "done" or "fail"
+bar.destroy();         // remove the canvas and everything the bar added
+
+PixelFX.progress.styles;      // every style name
+PixelFX.progress.scan(root);  // set up [data-pixel-progress] under root
+PixelFX.progress.get(el);     // the bar on el, or null
+```
+
+A bar keeps animating for a moment after each update, then settles, so a stalled upload goes quiet. Every bar shares one animation loop, which stops when nothing is moving. Bars that are off screen paint once and then wait until they scroll into view. Bars follow `PixelFX.configure()`, including the colour scheme, speed and reduced motion.
+
 ## Install
 
 Plain script tag. This sets `window.PixelFX` and attaches to every `[data-pixel-fx]` element on the page once the DOM is ready:
@@ -100,6 +181,8 @@ ES module. Nothing attaches automatically:
 import PixelFX from "/assets/foopixel-fx.esm.min.js";
 PixelFX.scan();
 ```
+
+From npm, `@fooplugins/foopixel-fx` is the core and `@fooplugins/foopixel-fx/progress` is the [progress add-on](#progress-bars).
 
 ## Use it with data attributes
 
@@ -172,6 +255,9 @@ PixelFX.configure({
     pulse: "#35c6f4",               // Uplink icon ring
   },
 });
+
+PixelFX.settings();             // a copy of the current settings; unlike configure(), changes nothing
+PixelFX.colors("sunset");       // a scheme's colours, or the current ones with no name
 ```
 
 ### Bursts
@@ -199,7 +285,7 @@ PixelFX.schemes;                      // every colour scheme name
 
 `burst()` returns `false` when nothing was drawn, for example when reduced motion is on. It fires straight away and doesn't need `scan()`. Bursts use the global `speed`, `maxDpr`, `respectReducedMotion` and `colors` settings from `configure()`, with `colors.light` for the pale sparks.
 
-TypeScript types are in `dist/foopixel-fx.d.ts`.
+TypeScript types are in `dist/foopixel-fx.d.ts`, and `dist/foopixel-fx-progress.d.ts` for the progress add-on.
 
 ### Upload in progress
 
@@ -211,6 +297,8 @@ zoneFx.setActive(true);
 await upload(file);
 zoneFx.setActive(false);
 ```
+
+To show how far along it is, add one of the [progress bars](#progress-bars) next to the zone.
 
 ## How it fits into your layout
 
@@ -240,10 +328,11 @@ Bursts don't touch your layout. They draw on one shared canvas fixed over the wh
 - By default, nothing animates when the user has reduced motion turned on, including bursts. To override that, pass `respectReducedMotion: false`.
 - Each element runs its own `requestAnimationFrame` loop, only while it's active or fading out, then stops completely. Bursts share a single loop that stops when the last pixel has gone. Nothing runs when the page is idle.
 - Canvas resolution is capped at 2× device pixel ratio (`maxDpr`).
+- Progress bars carry information, so they stay accessible. A wrapped `<progress>` is hidden visually but kept for screen readers. Without one, the element gets `role="progressbar"` and live `aria-valuenow` and `aria-valuemax`, plus `aria-valuetext="Failed"` when it fails. With reduced motion on, bars still update, just without animating.
 
 ## Build
 
-`src/` holds the source. `./build.sh` rebuilds `dist/` and needs Node for `npx terser`. Open `demo/index.html` to compare the hover effects, using the sliders and the "keep running" toggle, `demo/bursts.html` to try the bursts, and `demo/shatter.html` to shatter a photo into pixel art.
+`src/` holds the source. `./build.sh` rebuilds `dist/` and needs Node for `npx terser`. Open `demo/index.html` to compare the hover effects, using the sliders and the "keep running" toggle, `demo/bursts.html` to try the bursts, `demo/shatter.html` to shatter a photo into pixel art, and `demo/progress.html` to try every progress bar at three sizes.
 
 ```
 dist/foopixel-fx.js          script tag, readable
@@ -251,6 +340,12 @@ dist/foopixel-fx.min.js      script tag, minified
 dist/foopixel-fx.esm.js      ES module, readable
 dist/foopixel-fx.esm.min.js  ES module, minified
 dist/foopixel-fx.d.ts        types
+
+dist/foopixel-fx-progress.js          progress add-on, script tag, readable
+dist/foopixel-fx-progress.min.js      progress add-on, script tag, minified
+dist/foopixel-fx-progress.esm.js      progress add-on, ES module (imports foopixel-fx.esm.js)
+dist/foopixel-fx-progress.esm.min.js  progress add-on, ES module (imports foopixel-fx.esm.min.js)
+dist/foopixel-fx-progress.d.ts        progress add-on types
 ```
 
 ## License

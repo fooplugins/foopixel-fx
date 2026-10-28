@@ -81,6 +81,10 @@ export interface PixelFXApi {
   destroy(el: Element): void;
   all(): PixelFXInstance[];
   configure(config?: PixelFXConfig): Required<PixelFXConfig>;
+  /** A copy of the current global settings. Unlike configure(), it changes and redraws nothing. */
+  settings(): Required<PixelFXConfig>;
+  /** The colours for a named scheme, or the current global colours when no name is given. */
+  colors(scheme?: PixelScheme): { brand: [string, string]; light: [string, string]; pulse: string };
   readonly bursts: PixelBurstStyle[];
   readonly schemes: PixelScheme[];
   /** Fire a one-off burst from an element's centre, or from a viewport point. Returns false if nothing was drawn. */
@@ -97,6 +101,8 @@ export const get: PixelFXApi["get"];
 export const destroy: PixelFXApi["destroy"];
 export const all: PixelFXApi["all"];
 export const configure: PixelFXApi["configure"];
+export const settings: PixelFXApi["settings"];
+export const colors: PixelFXApi["colors"];
 export const burst: PixelFXApi["burst"];
 export const bursts: PixelFXApi["bursts"];
 export const schemes: PixelFXApi["schemes"];
