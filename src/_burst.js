@@ -4,7 +4,7 @@
   // added on the first burst and removed again as soon as the last pixel is gone.
   const GRAVITY = 900; // px/s²
   const MAX_PIXELS = 4000;
-  const BURST_DEFAULTS = { style: "burst", amount: 1, size: 1, speed: 1, gravity: 1, snap: true, scheme: null, colors: null, origin: null, height: null };
+  const BURST_DEFAULTS = { style: "burst", amount: 1, size: 1, speed: 1, gravity: 1, snap: true, scheme: null, colors: null, origin: null, height: null, pixels: null };
   const layer = { cv: null, ctx: null, w: 0, h: 0, dpr: 1, parts: [], raf: 0, last: 0 };
 
   function mountLayer() {
@@ -72,7 +72,7 @@
       const p = P[i], b = p.b, dt = raw * config.speed * b.speed;
       p.t += dt;
       const lt = p.t - p.delay;
-      if (lt < 0) { if (p.hold) drawPixel(ctx, p, 0, 0); continue; }
+      if (lt < 0) { if (p.hold) drawPixel(ctx, p, 0, 0, true); continue; }
       const done = lt >= p.life;
       if (done || p.y > layer.h + 60) {
         P[i] = P[P.length - 1]; P.pop(); // order doesn't matter, so swap-remove
@@ -96,7 +96,7 @@
     else { layer.raf = 0; layer.cv.remove(); }
   }
 
-  function drawPixel(ctx, p, lt, k) {
+  function drawPixel(ctx, p, lt, k, held) {
     let a = p.alpha * (k < p.fade ? 1 : 1 - (k - p.fade) / (1 - p.fade));
     if (p.fadeIn) a *= Math.min(1, lt / p.fadeIn);
     if (p.twinkle && ((lt * p.twinkle + p.ph) % 1) < 0.35) a *= 0.2;
@@ -107,10 +107,16 @@
     const w = p.flip ? Math.max(1, Math.round(s * Math.abs(Math.cos(lt * p.flip + p.ph)))) : s;
     let x = p.x + (p.sway ? Math.sin(lt * p.swayF + p.ph) * p.sway : 0) - w / 2, y = p.y - s / 2;
     const g = p.b.grid;
-    if (g) { x = Math.round(x / g) * g; y = Math.round(y / g) * g; }
+    if (held) { // held pixels sit exactly where the element was, on whole device pixels so they tile without seams
+      x = Math.round(x * layer.dpr) / layer.dpr; y = Math.round(y * layer.dpr) / layer.dpr;
+    } else if (g) { x = Math.round(x / g) * g; y = Math.round(y / g) * g; }
     ctx.globalAlpha = a;
-    ctx.fillStyle = p.c;
-    ctx.fillRect(x, y, w, s);
+    if (held && p.shot) { // a shattering image shows its real pixels until each cell lets go
+      ctx.drawImage(p.shot, p.sx, p.sy, p.sw, p.sw, x, y, w, s);
+    } else {
+      ctx.fillStyle = p.c;
+      ctx.fillRect(x, y, w, s);
+    }
   }
 
   const TAU = Math.PI * 2;
@@ -149,14 +155,27 @@
         const dx = Math.max(r.left + rad - x, 0, x - (r.right - rad)), dy = Math.max(r.top + rad - y, 0, y - (r.bottom - rad));
         return dx * dx + dy * dy <= rad * rad;
       };
+      // images, canvases and videos break into their real pixels (null when tainted or not loaded),
+      // or into the pixels of o.pixels when it's given
+      const media = mediaPixels(o.pixels || el, r, cell), cols = Math.ceil(r.width / cell);
+      // and until each cell breaks off, it shows that part of the image as it was
+      const shot = mediaShot(el, r), zoom = shot ? shot.width / r.width : 0;
       let longest = 0;
-      for (let y = r.top + cell / 2; y < r.bottom; y += cell) for (let x = r.left + cell / 2; x < r.right; x += cell) {
+      for (let row = 0, y = r.top + cell / 2; y < r.bottom; y += cell, row++) for (let col = 0, x = r.left + cell / 2; x < r.right; x += cell, col++) {
         if (!inside(x, y)) continue;
+        let c;
+        if (media) {
+          const i = (row * cols + col) * 4;
+          if (media[i + 3] < 128) continue; // see-through parts of a PNG leave a hole
+          c = `rgb(${media[i]},${media[i + 1]},${media[i + 2]})`;
+        } else {
+          c = bgA < 0.5 || Math.random() < 0.28 ? b.pick((x - r.left) / r.width) : bg;
+        }
         const dx = x - ix, dy = y - iy, dist = Math.hypot(dx, dy) || 1, delay = dist * 0.0009, life = rand(0.8, 1.4);
         longest = Math.max(longest, delay + life);
         b.add({ x, y, vx: (dx / dist) * rand(120, 320) + rand(-40, 40), vy: (dy / dist) * rand(80, 240) - rand(140, 320),
-                g: 1.2, drag: 0.9, delay, hold: true, life, s: cell, shrink: true, fade: 0.5,
-                c: bgA < 0.5 || Math.random() < 0.28 ? b.pick((x - r.left) / r.width) : bg });
+                g: 1.2, drag: 0.9, delay, hold: true, life, s: cell, shrink: true, fade: 0.5, c,
+                shot, sx: (x - cell / 2 - r.left) * zoom, sy: (y - cell / 2 - r.top) * zoom, sw: cell * zoom });
       }
       const was = el.style.visibility;
       el.dataset.pixelShattering = "";
@@ -250,6 +269,34 @@
       });
     },
   };
+
+  // Shatter on an <img>, <canvas> or <video> that has something to show.
+  const isMedia = (el) => el instanceof HTMLCanvasElement ||
+    (el instanceof HTMLImageElement && el.complete && el.naturalWidth > 0) ||
+    (el instanceof HTMLVideoElement && el.readyState >= 2);
+
+  // One colour per cell, read from the media scaled down to the cell grid.
+  function mediaPixels(el, r, cell) {
+    if (!isMedia(el)) return null;
+    const cols = Math.ceil(r.width / cell), rows = Math.ceil(r.height / cell);
+    if (!cols || !rows) return null;
+    try {
+      const c = document.createElement("canvas");
+      c.width = cols; c.height = rows;
+      const ctx = c.getContext("2d", { willReadFrequently: true });
+      ctx.drawImage(el, 0, 0, r.width / cell, r.height / cell);
+      return ctx.getImageData(0, 0, cols, rows).data;
+    } catch { return null; } // cross-origin media without CORS can't be read, so it falls back to colours
+  }
+
+  // A copy of the media at screen resolution, so cells that haven't broken off yet still show it.
+  function mediaShot(el, r) {
+    if (!isMedia(el)) return null;
+    const dpr = Math.min(window.devicePixelRatio || 1, config.maxDpr), c = document.createElement("canvas");
+    c.width = Math.max(1, Math.round(r.width * dpr));
+    c.height = Math.max(1, Math.round(r.height * dpr));
+    try { c.getContext("2d").drawImage(el, 0, 0, c.width, c.height); return c; } catch { return null; }
+  }
 
   // Firework second stage: twinkling sparks with faint trails; a few crackle as they die.
   function explode(b, x, y) {

@@ -42,7 +42,7 @@ export interface PixelBurstOptions {
   style?: PixelBurstStyle;
   /** Multiplier on the number of pixels. Default 1. */
   amount?: number;
-  /** Multiplier on pixel size. Default 1. */
+  /** Multiplier on pixel size. Default 1. Shatter breaks elements into 6px × size cells. */
   size?: number;
   /** Multiplier on the global speed for this burst. Default 1. */
   speed?: number;
@@ -56,6 +56,8 @@ export interface PixelBurstOptions {
   colors?: [string, string] | string;
   /** Shatter: the viewport point the break spreads from. Defaults to the element's centre. */
   origin?: { x: number; y: number };
+  /** Shatter: an image or canvas to take the falling pixels' colours from, scaled to fill the element. Defaults to the element itself when it's an img, canvas or video. */
+  pixels?: HTMLImageElement | HTMLCanvasElement | HTMLVideoElement;
   /** Firework: how far the rocket climbs, in pixels, before it bursts. Defaults to a random 200–260. */
   height?: number;
 }

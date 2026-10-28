@@ -46,7 +46,7 @@ Fire one from a button click, a finished upload, a saved form or any other momen
 |---|---|---|
 | `burst` | Pixels fly out in every direction, arc down and halve in size before they vanish | Anything; the default |
 | `confetti` | A cannon of tumbling pixel confetti fired up from the element's top edge | Publish, launch, sign-up |
-| `shatter` | The element breaks into its own pixels from the point you clicked, then snaps back | Remove, reset, clear |
+| `shatter` | The element breaks into its own pixels from the point you clicked, then snaps back. Images, canvases and videos break into their real pixels | Remove, reset, clear |
 | `shockwave` | Three pixel rings roll outward like a sonar ping | Copy, small confirmations |
 | `firework` | A pixel rocket climbs, then bursts into twinkling, crackling sparks | Upgrades, achievements |
 | `starburst` | 8-bit sparkle: rays step out along eight directions, then a second pale wave | Favourite, like, star |
@@ -190,6 +190,7 @@ PixelFX.burst(button, {
   scheme: "synthwave",                // this burst only; defaults to the global colours
 });
 PixelFX.burst(button, { style: "shatter", origin: { x: e.clientX, y: e.clientY } }); // where the break starts
+PixelFX.burst(img, { style: "shatter", pixels: pixelArtCanvas }); // an image that falls apart in another image's pixels
 PixelFX.burst(button, { style: "firework", height: 120 }); // climb 120px before bursting (default: a random 200–260)
 
 PixelFX.bursts;                       // every style name
@@ -242,7 +243,7 @@ Bursts don't touch your layout. They draw on one shared canvas fixed over the wh
 
 ## Build
 
-`src/` holds the source. `./build.sh` rebuilds `dist/` and needs Node for `npx terser`. Open `demo/index.html` to compare the hover effects, using the sliders and the "keep running" toggle, and `demo/bursts.html` to try the bursts.
+`src/` holds the source. `./build.sh` rebuilds `dist/` and needs Node for `npx terser`. Open `demo/index.html` to compare the hover effects, using the sliders and the "keep running" toggle, `demo/bursts.html` to try the bursts, and `demo/shatter.html` to shatter a photo into pixel art.
 
 ```
 dist/foopixel-fx.js          script tag, readable
